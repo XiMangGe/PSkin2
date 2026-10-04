@@ -312,6 +312,41 @@ public class PSkinConfig {
         return Math.max(3, this.littleSkinTimeout);
     }
 
+    /**
+     * 判断 providers.order 中的某个名字是否是自定义 Yggdrasil 皮肤站。
+     * 配置示例:
+     *   providers:
+     *     order: [mojang, littleskin, myskin]
+     *     myskin:
+     *       type: yggdrasil
+     *       enabled: true
+     *       api-root: "https://mcskin.example.com/api/yggdrasil"
+     *       timeout-seconds: 10
+     */
+    public boolean isCustomYggdrasil(String name) {
+        if (name == null) return false;
+        String lower = name.toLowerCase();
+        if ("mojang".equals(lower) || "littleskin".equals(lower)) return false;
+        String type = this.plugin.getConfig().getString("providers." + name + ".type", "");
+        return "yggdrasil".equalsIgnoreCase(type);
+    }
+
+    public boolean isCustomYggdrasilEnabled(String name) {
+        return this.plugin.getConfig().getBoolean("providers." + name + ".enabled", true);
+    }
+
+    public String getCustomYggdrasilApiRoot(String name) {
+        String root = this.plugin.getConfig().getString("providers." + name + ".api-root", "");
+        if (root != null && root.endsWith("/")) {
+            root = root.substring(0, root.length() - 1);
+        }
+        return root;
+    }
+
+    public int getCustomYggdrasilTimeout(String name) {
+        return Math.max(3, this.plugin.getConfig().getInt("providers." + name + ".timeout-seconds", 10));
+    }
+
     public boolean isAutoApplyOnJoin() {
         return this.autoApplyOnJoin;
     }

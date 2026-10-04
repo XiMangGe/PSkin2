@@ -23,15 +23,33 @@ public class LittleSkinProvider
 implements SkinProvider {
     private final PSkinConfig config;
     private final HttpClient httpClient;
+    private final String apiRoot;
+    private final String displayName;
 
     public LittleSkinProvider(PSkinConfig config) {
+        this(config, config.getLittleSkinApiRoot(), "LittleSkin");
+    }
+
+    /**
+     * 自定义 Yggdrasil 皮肤站构造函数。
+     * @param config 插件配置
+     * @param apiRoot Yggdrasil API 根地址
+     * @param displayName 显示名称（用于日志和 /pskin status）
+     */
+    public LittleSkinProvider(PSkinConfig config, String apiRoot, String displayName) {
         this.config = config;
+        String root = apiRoot;
+        if (root != null && root.endsWith("/")) {
+            root = root.substring(0, root.length() - 1);
+        }
+        this.apiRoot = root;
+        this.displayName = displayName == null || displayName.isEmpty() ? "LittleSkin" : displayName;
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10L)).followRedirects(HttpClient.Redirect.NORMAL).build();
     }
 
     @Override
     public String getName() {
-        return "LittleSkin";
+        return this.displayName;
     }
 
     @Override
@@ -41,9 +59,9 @@ implements SkinProvider {
                 HttpResponse<String> sessionResp;
                 JsonArray profilesArray;
                 HttpResponse<String> profilesResp;
-                String apiRoot = this.config.getLittleSkinApiRoot();
-                if (apiRoot.endsWith("/")) {
-                    apiRoot = apiRoot.substring(0, apiRoot.length() - 1);
+                String apiRoot = this.apiRoot;
+                if (apiRoot == null || apiRoot.isEmpty()) {
+                    return SkinFetchResult.apiError();
                 }
                 String profilesUrl = apiRoot + "/api/profiles/minecraft";
                 String body = "[\"" + username.replace("\"", "\\\"") + "\"]";

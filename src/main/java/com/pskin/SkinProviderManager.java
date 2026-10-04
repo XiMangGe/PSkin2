@@ -40,7 +40,8 @@ public class SkinProviderManager {
         this.providers.clear();
         List<String> order = this.config.getProviderOrder();
         block8: for (String name : order) {
-            switch (name.toLowerCase()) {
+            String lower = name.toLowerCase();
+            switch (lower) {
                 case "mojang": {
                     if (!this.config.isMojangEnabled()) continue block8;
                     this.providers.add(new MojangSkinProvider(this.config));
@@ -54,7 +55,19 @@ public class SkinProviderManager {
                     continue block8;
                 }
             }
-            this.plugin.getLogger().warning("\u914d\u7f6e\u4e2d\u672a\u77e5\u7684\u76ae\u80a4\u6e90: " + name + "\uff08\u53ef\u7528: mojang, littleskin\uff09");
+            // 自定义 Yggdrasil 皮肤站（Blessing Skin 兼容）
+            if (this.config.isCustomYggdrasil(name)) {
+                if (!this.config.isCustomYggdrasilEnabled(name)) continue block8;
+                String apiRoot = this.config.getCustomYggdrasilApiRoot(name);
+                if (apiRoot == null || apiRoot.isEmpty()) {
+                    this.plugin.getLogger().warning("皮肤源 " + name + " 未配置 api-root，已跳过");
+                    continue block8;
+                }
+                this.providers.add(new LittleSkinProvider(this.config, apiRoot, name));
+                this.plugin.getLogger().info("已注册自定义皮肤源: " + name + " (" + apiRoot + ")");
+                continue block8;
+            }
+            this.plugin.getLogger().warning("配置中未知的皮肤源: " + name + "（可用: mojang, littleskin，或在 providers 下配置 type: yggdrasil 的自定义皮肤源）");
         }
         if (this.providers.isEmpty()) {
             this.plugin.getLogger().warning("\u6ca1\u6709\u542f\u7528\u4efb\u4f55\u76ae\u80a4\u6e90\uff01\u8bf7\u5728 config.yml \u7684 providers.order \u4e2d\u914d\u7f6e");

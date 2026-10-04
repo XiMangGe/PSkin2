@@ -1,0 +1,331 @@
+# ================================
+#   PSkin2 皮肤插件配置文件 v26.8.29.1
+#   适用于 Purpur / Paper 26.2
+# ================================
+
+# 语言设置（游戏内消息，默认中文）
+# 可选: zh_CN(简体中文) / zh_TW(繁體中文) / en_US(English) / ja_JP(日本語)
+# 修改后执行 /pskin reload 即可切换语言
+language: zh_CN
+
+# ================================
+# 进服自动加载皮肤
+# ================================
+auto-apply-on-join: true
+
+# 进服后延迟多少 tick 再应用皮肤
+# 20 tick = 1 秒。建议保持 20，给登录/认证插件留出处理时间
+join-delay-ticks: 20
+
+# 进服/登录自动加载远程皮肤（mojang / littleskin）成功后，是否给玩家发送一条聊天提示。
+# 此项是「非进服场景」(如 /pskin set /pskin update 等指令) 回退用的单行提示；
+# 进服/登录场景优先使用下方 join-notify 的多行横幅。
+auto-apply-feedback: true
+
+# ================================
+# 进服皮肤加载提示（多行横幅，可自定义）
+# ================================
+# 进服 / 登录（AuthMe 验证通过后）自动加载皮肤时，给玩家发送的多行横幅。
+# 三段各是一个多行消息列表，支持变量和 & 颜色代码:
+#   {player}   玩家名
+#   {source}   皮肤来源: mojang / littleskin / web / manual / offline
+#   {server}   服务器名
+# 每行开头的 "=" 装饰线只是示意，可任改成你想要的样子（文字、颜色、符号都行）。
+# 把某一段设成 []（空列表）即可关闭该段，比如不想发"成功"提示就把 success 改成 []。
+join-notify:
+  # 总开关；false = 完全关闭进服横幅（此时名单行 auto-apply-feedback）
+  enabled: true
+  # 1. 开始加载时的横幅
+  start:
+    - "          &8&m========================================"
+    - "      &6&lPSkin2 &7正在为你加载皮肤..."
+    - "          &8&m========================================"
+  # 2. 加载成功时的横幅（{source} 会替换成实际来源）
+  success:
+    - "  &8&m============&r &a&l✔ 皮肤加载完成 &r&8&m============"
+    - "   &7来源: &f{source}"
+    - "  &8========= {server} · Services provided by PSkin2 ========="
+  # 3. 加载失败 / 没找到皮肤的横幅
+  fail:
+    - "  &8&m============&r &c&l✘ 未能加载到皮肤 &r&8&m============"
+    - "   &7将保持默认外观"
+    - "  &8========= {server} · Services provided by PSkin2 ========="
+
+# AuthMe 登录插件集成（软依赖，可留 false）
+# 离线服装了 AuthMe 时，AuthMe 会在玩家登录成功那一刻重置玩家数据（含皮肤），
+# 把 PSkin 进服刚应用的皮肤覆盖回默认，导致"只有 /pskin set 才有皮肤"。
+# 开启后，插件会在 AuthMe 登录验证通过之后再重新应用皮肤，避免被覆盖。
+# 服务器没装 AuthMe 请保持 false。
+authme:
+  enabled: true
+
+# ================================
+# 皮肤解析规则（进服和指令共用同一套规则）
+# ================================
+# 固定优先级（不受下面列表影响，从高到低）:
+#   1. 来源锁定   /pskin source 设置的玩家，强制用锁定的来源
+#   2. 网站上传   在网站上传过皮肤就一直固定用它（不再查询下面的远程源）
+#                只有 /pskin delete 删除、/pskin set、/pskin url、
+#                /pskin source 锁定 或 网站重新上传 才会更换
+#   3. 手动设置   /pskin set、/pskin url 设置的皮肤（永久保留）
+#
+# 下面这个列表只决定「远程皮肤源」的查询顺序
+# （网站上传/手动设置都没有的玩家进服时按此顺序查找）:
+#   mojang     - 正版 Mojang 皮肤
+#   littleskin - LittleSkin 皮肤
+skin-priority:
+  - mojang
+  - littleskin
+
+# ================================
+# 皮肤来源 API 配置
+# ================================
+providers:
+  # 查找顺序：从上到下依次尝试（用于 /pskin set 按名字查询）
+  order:
+    - mojang
+    - littleskin
+
+  # 正版 Mojang 皮肤源
+  mojang:
+    enabled: true
+    # 用户名 -> UUID 查询接口
+    profile-url: "https://api.mojang.com/users/profiles/minecraft/%s"
+    # UUID -> 皮肤纹理接口（含签名）
+    session-url: "https://sessionserver.mojang.com/session/minecraft/profile/%s?unsigned=false"
+    # 请求超时（秒）
+    timeout-seconds: 10
+
+  # LittleSkin 皮肤站（Blessing Skin / Yggdrasil 协议）
+  # 也可以改成其他 Blessing Skin 皮肤站的 API 地址
+  littleskin:
+    enabled: true
+    # Yggdrasil API 根地址（LittleSkin 官方）
+    api-root: "https://littleskin.cn/api/yggdrasil"
+    # 请求超时（秒）
+    timeout-seconds: 10
+
+  # ========== 自定义皮肤站（可选，添加任意多个） ==========
+  # 任何基于 Blessing Skin Server 的皮肤站都支持（Yggdrasil 协议）
+  # 把名字加到上面的 order 里即可生效，例如 order: [mojang, littleskin, myskin]
+  #
+  # myskin:
+  #   type: yggdrasil              # 必须填 yggdrasil
+  #   enabled: true
+  #   api-root: "https://你的皮肤站域名/api/yggdrasil"
+  #   timeout-seconds: 10
+  #
+  # anotherskin:
+  #   type: yggdrasil
+  #   enabled: true
+  #   api-root: "https://另一个皮肤站/api/yggdrasil"
+  #   timeout-seconds: 10
+
+# ================================
+# Mineskin 重签（皮肤全客户端可见的关键功能）
+# ================================
+# LittleSkin 等第三方皮肤站的签名不是 Mojang 官方签名，
+# 部分客户端（PCL2、HMCL 正版模式等）会不显示皮肤。
+# 开启后自动通过 Mineskin 重新生成带 Mojang 签名的纹理数据。
+mineskin:
+  resign-enabled: true
+  # Mineskin API 超时（秒）
+  timeout-seconds: 30
+  # ===== API Key（强烈建议配置！） =====
+  # 免费申请: https://account.mineskin.org/keys
+  # 用 Mineskin 账号登录后创建即可，无需付费
+  # 好处: 专属限流池，几乎不会遇到"服务繁忙"；
+  #       不填则与全球匿名用户共享公共池，高峰期容易 429 限流
+  api-key: ""
+  # Mineskin API 主地址（一般不用改）
+  # 使用 V2 API（/v2/generate），兼容 V1 响应格式
+  api-url: "https://api.mineskin.org"
+  # ===== 镜像站说明 =====
+  # 注意: Mineskin 没有公开的公益镜像站！
+  # 因为生成签名需要消耗真实正版账号上传皮肤，无法随便搭建镜像。
+  # 官方地址连不上的正确解法是配置上面的 api-key，或检查服务器网络。
+  # 镜像功能仅适用于自建 Mineskin 服务端（github.com/MineSkin/api.mineskin.org）
+  mirrors:
+    # 是否启用镜像切换（关闭时只用上面的 api-url）
+    enabled: false
+    # 镜像地址列表，按顺序尝试；api-url 总是最先尝试
+    # 镜像必须支持 V2 API（/v2/generate）
+    # 地址末尾不要带斜杠；列表留空则等于关闭镜像
+    urls: []
+    #  urls:
+    #    - "https://你的自建mineskin.example.com"
+    # 端点切换规则:
+    #   1. 上次成功的端点下次优先使用
+    #   2. 端点失败（连不上/超时）自动切下一个
+    #   3. 429 限流时优先切下一个端点（各端点限流独立）
+    #   4. 全部端点失败才向上传网页报错
+    # /pskin status 可查看当前实际使用的端点
+
+# 是否剥离皮肤签名（部分情况剥离签名可解决皮肤不显示，一般保持 false）
+strip-signature: false
+
+# ================================
+# 离线玩家（没查到皮肤的玩家）
+# ================================
+offline:
+  # 是否给离线玩家应用默认皮肤（否则保持 Steve/Alex 原版皮肤）
+  default-skin-enabled: false
+  # 默认皮肤的名字（会按正常流程去 Mojang / LittleSkin 查询这个名字的皮肤）
+  # 例如填 "MHF_Steve" 就用官方 Steve 皮肤
+  default-skin-name: "MHF_Steve"
+
+# ================================
+# 基岩版玩家（Geyser / Floodgate）
+# ================================
+bedrock:
+  # 是否处理基岩版玩家皮肤
+  enabled: true
+  # 基岩版玩家名前缀（Floodgate 默认是 "." 或 "_"，请按你的 Floodgate 配置填写）
+  prefix: "."
+  # 是否给基岩版玩家应用网站上传/手动设置的皮肤
+  # 网站上传皮肤时必须用带前缀的完整名字（如 .Steve）
+  apply-custom-skins: true
+  # 是否给基岩版玩家查询远程皮肤源（正版/LittleSkin）
+  # 用去掉前缀的名字查询：.Steve 进服会查 Steve 的皮肤
+  remote-skins: true
+
+# ================================
+# 皮肤上传网站
+# ================================
+web:
+  # 是否启用网站（网站功能总开关，false = 网站完全不运行）
+  enabled: true
+  # 是否在游戏里显示网站入口（/pskin web 和 /pskin help 末尾的网站地址）
+  # 两台服务器共用一个网站时，可以把其中一台的这里设为 false，只让另一台显示
+  # 注意：这只影响"显示"，网站本身仍然可以访问
+  show-link: true
+  # 网站端口（局域网访问用，例如 http://你的服务器IP:7505）
+  port: 7505
+  # 端口被占用时是否自动换下一个端口（两台服务器在同一台机器上时，
+  # 第二台的 7505 会被第一台占用，自动改用 7506 并在日志里提示）
+  # 设为 false = 端口被占用时直接启动失败，需要手动改端口
+  auto-port: true
+  # 绑定地址，0.0.0.0 = 局域网所有设备可访问
+  bind: "0.0.0.0"
+  # /pskin web 命令和启动日志显示的公网访问地址（留空自动根据 bind 推断）
+  # 服务器前面有反代 / 域名时建议配置，玩家点链接直接访问。
+  # 支持写法: "mc.example.com"、"mc.example.com:7505"、"https://skin.example.com"
+  public-address: ""
+  # 网站语言（独立于游戏内语言）: zh_CN / en_US
+  language: zh_CN
+
+  # ===== 网站显示内容（全部可自定义）=====
+  # 网站标题（浏览器标签页 + 页面大标题）
+  title: "服务器皮肤上传网站"
+  # 副标题
+  subtitle: "上传你的专属皮肤，全服玩家可见"
+  # 公告（留空则不显示）
+  announcement: ""
+  # 页脚文字
+  footer: "Powered by PSkin2"
+  # 画廊页标题
+  gallery-title: "全服皮肤画廊"
+  # 主题色（# 开头的 6 位十六进制颜色）
+  theme-color: "#4f8cff"
+
+  # ===== 上传限制 =====
+  # 皮肤图片最大体积（KB）
+  max-upload-kb: 256
+  # 是否校验上传的图片（PNG 格式 + 皮肤比例尺寸 64x64/128x128 等）
+  # 关闭后任何图片都直接提交 Mineskin，但非皮肤比例的图最终仍会被
+  # Minecraft 客户端拒绝，不建议关闭
+  validate-image: true
+  # 同一玩家两次上传的间隔（秒），防止刷 Mineskin 限流
+  upload-cooldown-seconds: 60
+  # 网站调试日志
+  debug: false
+
+  # ===== 网页模板文件（可自定义网页外观）=====
+  # 网页 HTML 模板默认内置在插件里；开启 files-enabled 后，插件会在
+  # 服务器目录  plugins/PSkin2/<files-folder>/  下生成模板文件，
+  # 你可以直接修改里面的 HTML / CSS / JS 来自定义网站外观，
+  # 修改后执行 /pskin reload 或重启服务器即可生效。
+  #
+  # 各文件用途:
+  #   upload.html        上传页（根路径 /）
+  #   gallery.html       皮肤画廊页（/skins）
+  #   admin.html         管理后台页（/admin）
+  #   404.html           未找到页面
+  files-enabled: true
+  # 网页模板文件夹名（相对插件数据目录 plugins/PSkin2/）
+  files-folder: Web
+
+  # ===== 网站管理页 =====
+  # 管理密码（空 = 禁用 /admin 管理页面）
+  # 设置后访问 http://服务器地址:端口/admin 输入密码登录，
+  # 可在网页上查看/删除任意玩家上传的皮肤
+  admin-password: ""
+
+  # ===== 进服反馈 =====
+  # 玩家进服应用网站上传的皮肤时，是否发送提示消息
+  # （提示内容: "已为你应用在网站上传的皮肤"）
+  join-feedback: true
+
+# ================================
+# 命令设置
+# ================================
+commands:
+  # 命令冷却（秒），防止频繁请求皮肤服务器被限流。0 = 不冷却
+  cooldown-seconds: 30
+
+# ================================
+# 缓存设置
+# ================================
+# 皮肤缓存时长（分钟），缓存期内不重复请求皮肤服务器
+# 720 分钟 = 12 小时。0 = 禁用缓存
+# 注意：玩家用 /pskin set 手动设置的皮肤永久保留，不受此限制
+skin-cache-minutes: 720
+
+# ================================
+# 存储设置（多服共享数据）
+# ================================
+# file       = 本地文件（默认，单服模式，数据只存在本服）
+# shared-dir = 共享目录（多服模式：两台服务器读写同一个文件夹，数据互通，无需数据库）
+# mysql      = MySQL 数据库（多服模式：还需把下面 mysql.enabled 改成 true 才会启用）
+#
+# 群组服/小游戏服必看：
+#   1. 共享目录模式: 把 type 改成 shared-dir，directory 填两台服务器都能访问的
+#      同一个文件夹路径（比如两台服在同一台机器上，可以填 /srv/pskin-data），
+#      两台服务器的路径必须完全一样，重启后数据互通，无需数据库。
+#   2. MySQL 模式: 准备一个所有服务器都能访问的数据库，把 mysql.enabled 改成
+#      true，每台服务器的这里都填同一个数据库信息，重启生效。
+#   3. 重启服务器生效（/pskin reload 改这里无效）
+#   4. 首次启动会自动把本服已有的网站皮肤/来源锁定/缓存合并进共享目录/数据库
+#   5. 玩家在任意一服上传的皮肤，其他服立刻可用，无需重新上传
+storage:
+  type: file
+  # ===== 共享目录设置（type 为 shared-dir 时生效）=====
+  # 共享数据目录的路径，两台服务器填同一个路径
+  # 绝对路径直接用；相对路径按 plugins/PSkin2/ 下解析
+  # 留空 = 不用共享目录
+  directory: ""
+  mysql:
+    # 数据库总开关（默认关闭！type 为 mysql 时也要把它改成 true 才会连接）
+    enabled: false
+    host: "127.0.0.1"
+    port: 3306
+    database: "pskin"
+    username: "pskin"
+    password: "请改成你的数据库密码"
+    # 表名前缀（同一个库里跑多个插件时防止撞表，不用改）
+    table-prefix: "pskin_"
+    # 是否加密连接。本机或内网数据库保持 false 即可
+    use-ssl: false
+
+# ================================
+# 高级设置
+# ================================
+# HTTP 请求 User-Agent（部分皮肤站要求标识客户端）
+user-agent: "PSkin2/26.8.30.1"
+
+# 应用皮肤后是否对所有在线玩家强制刷新可见性
+# （Paper 26.2 通常会自动广播，只有皮肤不刷新时才需要开启）
+refresh-visibility: false
+
+# 调试模式（控制台输出详细日志，排查问题时开启）
+debug: false
