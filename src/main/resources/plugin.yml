@@ -1,0 +1,25 @@
+name: PSkin2
+version: 26.8.30.3
+main: com.pskin.PSkinPlugin
+api-version: '1.20'
+authors: [PSkin]
+description: Unified skin plugin (cross-version compatible) - Mojang, LittleSkin, web upload and offline skins
+website: https://github.com/pskin
+
+commands:
+  pskin:
+    description: PSkin main command
+    usage: /pskin <set|url|source|delete|web|clear|update|info|apply|status|reload|help>
+    aliases: [skinp, skin]
+    permission: pskin.use
+
+permissions:
+  pskin.use:
+    description: Allows using basic PSkin commands
+    default: true
+  pskin.admin:
+    description: Allows admin PSkin commands (source others / delete others / apply / status / reload)
+    default: op
+  pskin.bypasscooldown:
+    description: Bypass command cooldown
+    default: op
