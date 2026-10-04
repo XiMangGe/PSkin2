@@ -3,6 +3,9 @@ package com.pskin;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -26,6 +29,7 @@ public class SkinApplier {
     private Method getProfileMethod;
     private Method setProfileMethod;
     private boolean profileMethodChecked;
+    private boolean usePaperProfile;  // true=Paper PlayerProfile, false=Bukkit GameProfile
 
     public SkinApplier(JavaPlugin plugin, PSkinConfig config) {
         this.plugin = plugin;
@@ -84,11 +88,58 @@ public class SkinApplier {
     private void setTextures(Player player, String value, String signature) throws Exception {
         this.ensureProfileMethods(player);
         Object profile = this.getProfileMethod.invoke(player);
-        // profile 是 PlayerProfile (Paper) 或 GameProfile (Bukkit)
         Object propertyMap = profile.getClass().getMethod("getProperties").invoke(profile);
-        // 移除旧的 textures
+
+        // 移除旧的 textures 属性
+        if (this.usePaperProfile) {
+            // Paper: Set<ProfileProperty>，优先用 removeIf，失败则用迭代器
+            if (!removeTexturesFromSet(propertyMap)) {
+                throw new RuntimeException("无法移除旧的 textures 属性");
+            }
+        } else {
+            // Bukkit: PropertyMap (Map<String, Collection<Property>>)
+            try {
+                propertyMap.getClass().getMethod("removeAll", Object.class).invoke(propertyMap, "textures");
+            } catch (Exception ignored) {
+                // 兜底：直接 remove
+                try {
+                    Map.class.getMethod("remove", Object.class).invoke(propertyMap, "textures");
+                } catch (Exception ignored2) {
+                }
+            }
+        }
+
+        // 添加新纹理（如果 value != null）
+        if (value != null) {
+            Object newProp = this.createProperty("textures", value, signature);
+            if (this.usePaperProfile) {
+                // Paper: 通过 Set 接口的 add 方法（比具体类的 getMethod 更可靠）
+                try {
+                    Set.class.getMethod("add", Object.class).invoke(propertyMap, newProp);
+                } catch (Exception e) {
+                    throw new RuntimeException("无法添加 textures 属性到 Set", e);
+                }
+            } else {
+                // Bukkit: 通过 Map 接口的 put 方法
+                try {
+                    Map.class.getMethod("put", Object.class, Object.class).invoke(propertyMap, "textures", newProp);
+                } catch (Exception e) {
+                    throw new RuntimeException("无法添加 textures 属性到 Map", e);
+                }
+            }
+        }
+        // 写回 profile
+        this.setProfileMethod.invoke(player, profile);
+    }
+
+    /**
+     * 从 Paper 的 Set<ProfileProperty> 中移除 textures 属性。
+     * 先尝试 removeIf，失败则用迭代器遍历移除。
+     */
+    @SuppressWarnings("unchecked")
+    private boolean removeTexturesFromSet(Object propertyMap) {
+        // 方案1: removeIf
         try {
-            // Paper PlayerProfile: Set<ProfileProperty>.removeIf
             propertyMap.getClass().getMethod("removeIf", java.util.function.Predicate.class)
                     .invoke(propertyMap, (java.util.function.Predicate<Object>) prop -> {
                         try {
@@ -97,30 +148,23 @@ public class SkinApplier {
                             return false;
                         }
                     });
-        } catch (NoSuchMethodException e) {
-            // GameProfile PropertyMap: removeAll("textures")
-            try {
-                propertyMap.getClass().getMethod("removeAll", Object.class).invoke(propertyMap, "textures");
-            } catch (Exception ignored) {
-            }
+            return true;
+        } catch (Exception ignored) {
         }
-        // 添加新纹理（如果 value != null）
-        if (value != null) {
-            Object newProp = this.createProperty("textures", value, signature);
-            try {
-                // Paper: Set.add(ProfileProperty)
-                propertyMap.getClass().getMethod("add", Object.class).invoke(propertyMap, newProp);
-            } catch (Exception e) {
-                // GameProfile: PropertyMap.put("textures", Property)
-                try {
-                    propertyMap.getClass().getMethod("put", Object.class, Object.class).invoke(propertyMap, "textures", newProp);
-                } catch (Exception e2) {
-                    throw new RuntimeException("无法添加 textures 属性", e2);
+        // 方案2: 迭代器遍历移除
+        try {
+            Iterator<Object> it = ((Set<Object>) propertyMap).iterator();
+            while (it.hasNext()) {
+                Object prop = it.next();
+                String name = (String) prop.getClass().getMethod("getName").invoke(prop);
+                if ("textures".equals(name)) {
+                    it.remove();
                 }
             }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-        // 写回 profile
-        this.setProfileMethod.invoke(player, profile);
     }
 
     /**
@@ -155,6 +199,7 @@ public class SkinApplier {
             this.getProfileMethod = pc.getMethod("getPlayerProfile");
             this.setProfileMethod = pc.getMethod("setPlayerProfile",
                     Class.forName("com.destroystokyo.paper.profile.PlayerProfile"));
+            this.usePaperProfile = true;
             this.plugin.getLogger().info("使用 Paper PlayerProfile API 应用皮肤");
             return;
         } catch (Exception ignored) {
@@ -163,6 +208,7 @@ public class SkinApplier {
         try {
             this.getProfileMethod = pc.getMethod("getProfile");
             this.setProfileMethod = pc.getMethod("setProfile", Class.forName("com.mojang.authlib.GameProfile"));
+            this.usePaperProfile = false;
             this.plugin.getLogger().info("使用 Bukkit GameProfile API 应用皮肤（Paper API 不可用）");
         } catch (Exception e) {
             this.plugin.getLogger().warning("无法找到 profile 读写方法，皮肤应用可能失败: " + e.getMessage());
