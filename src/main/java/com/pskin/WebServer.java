@@ -604,20 +604,15 @@ public class WebServer {
         if ("skin".equals(type)) {
             removed = this.webSkinManager.remove(name);
             what = "skin";
-            if (removed) {
-                this.skinCache.remove(name);
-            }
         } else {
             this.sendError(ex, 400, "bad type");
             return;
         }
         if (removed) {
+            this.skinCache.remove(name);
             SkinResolveService svc;
             Player online = Bukkit.getPlayerExact((String)name);
             if (online != null && online.isOnline() && (svc = this.plugin.getResolveService()) != null) {
-                if ("skin".equals(type)) {
-                    this.skinCache.invalidate(name);
-                }
                 svc.resolveAndApply(online);
             }
             if (this.config.isDebug()) {
@@ -684,7 +679,7 @@ public class WebServer {
     }
 
     private String renderAdminPage() {
-        return this.template("admin.html", ADMIN_TEMPLATE).replace("__TITLE__", WebServer.htmlEscape(this.lang.get("admin-title"))).replace("__SUBTITLE__", WebServer.htmlEscape(this.lang.get("admin-subtitle"))).replace("__THEME__", this.config.getWebThemeColor()).replace("__THEME2__", WebServer.deriveTheme2(this.config.getWebThemeColor())).replace("__BACK_UPLOAD__", this.lang.get("upload-link")).replace("__LOGOUT__", this.lang.get("admin-logout")).replace("__PASSWORD_PLACEHOLDER__", WebServer.htmlEscape(this.lang.get("admin-password-placeholder"))).replace("__LOGIN__", this.lang.get("admin-login")).replace("__WRONG_KEY__", WebServer.escapeJson(this.lang.get("admin-wrong-key"))).replace("__STAT_SKINS__", this.lang.get("admin-stats-skins")).replace("__SKINS_SECTION__", this.lang.get("admin-skins-section")).replace("__COL_PREVIEW__", this.lang.get("admin-col-preview")).replace("__COL_NAME__", this.lang.get("admin-col-name")).replace("__COL_MODEL__", this.lang.get("admin-col-model")).replace("__COL_DATE__", this.lang.get("admin-col-date")).replace("__COL_ACTIONS__", this.lang.get("admin-col-actions")).replace("__EMPTY__", WebServer.htmlEscape(this.lang.get("admin-empty"))).replace("__DEL__", WebServer.escapeJson(this.lang.get("admin-delete"))).replace("__CONFIRM_DEL__", WebServer.escapeJson(this.lang.get("admin-confirm-delete"))).replace("__DEL_FAIL__", WebServer.escapeJson(this.lang.get("admin-del-fail"))).replace("__M_CLASSIC__", WebServer.escapeJson(this.lang.get("model-classic"))).replace("__M_SLIM__", WebServer.escapeJson(this.lang.get("model-slim"))).replace("__YES__", WebServer.escapeJson(this.lang.get("admin-yes"))).replace("__NO__", WebServer.escapeJson(this.lang.get("admin-no")));
+        return this.template("admin.html", ADMIN_TEMPLATE).replace("__TITLE__", WebServer.htmlEscape(this.lang.get("admin-title"))).replace("__SUBTITLE__", WebServer.htmlEscape(this.lang.get("admin-subtitle"))).replace("__THEME__", this.config.getWebThemeColor()).replace("__THEME2__", WebServer.deriveTheme2(this.config.getWebThemeColor())).replace("__BACK_UPLOAD__", this.lang.get("upload-link")).replace("__LOGOUT__", this.lang.get("admin-logout")).replace("__PASSWORD_PLACEHOLDER__", WebServer.htmlEscape(this.lang.get("admin-password-placeholder"))).replace("__LOGIN__", this.lang.get("admin-login")).replace("__WRONG_KEY__", WebServer.escapeJson(this.lang.get("admin-wrong-key"))).replace("__STAT_SKINS__", this.lang.get("admin-stats-skins")).replace("__SKINS_SECTION__", this.lang.get("admin-skins-section")).replace("__COL_PREVIEW__", this.lang.get("admin-col-preview")).replace("__COL_NAME__", this.lang.get("admin-col-name")).replace("__COL_MODEL__", this.lang.get("admin-col-model")).replace("__COL_DATE__", this.lang.get("admin-col-date")).replace("__COL_ACTIONS__", this.lang.get("admin-col-actions")).replace("__EMPTY__", WebServer.htmlEscape(this.lang.get("admin-empty"))).replace("__DEL__", WebServer.escapeJson(this.lang.get("admin-delete"))).replace("__CONFIRM_DEL__", WebServer.escapeJson(this.lang.get("admin-confirm-delete"))).replace("__DEL_FAIL__", WebServer.escapeJson(this.lang.get("admin-del-fail"))).replace("__DATE_FMT__", WebServer.escapeJson(this.lang.get("date-format"))).replace("__M_CLASSIC__", WebServer.escapeJson(this.lang.get("model-classic"))).replace("__M_SLIM__", WebServer.escapeJson(this.lang.get("model-slim"))).replace("__YES__", WebServer.escapeJson(this.lang.get("admin-yes"))).replace("__NO__", WebServer.escapeJson(this.lang.get("admin-no")));
     }
 
     private String renderAdminDisabled() {
@@ -709,13 +704,13 @@ public class WebServer {
             e.imageUrl = "/skin/" + webSkinInfo.name + ".png";
             list.add(e);
         }
-        for (Map.Entry entry : this.skinCache.getAllEntries().entrySet()) {
+        for (Map.Entry<String, SkinData> entry : this.skinCache.getAllEntries().entrySet()) {
             String url;
-            String name = (String)entry.getKey();
-            if (this.webSkinManager.has(name) || (url = this.extractSkinUrl((SkinData)entry.getValue())) == null) continue;
+            String name = entry.getKey();
+            if (this.webSkinManager.has(name) || (url = this.extractSkinUrl(entry.getValue())) == null) continue;
             GalleryEntry e = new GalleryEntry();
             e.name = name;
-            e.source = ((SkinData)entry.getValue()).getDisplaySource();
+            e.source = entry.getValue().getDisplaySource();
             e.imageUrl = url;
             list.add(e);
         }

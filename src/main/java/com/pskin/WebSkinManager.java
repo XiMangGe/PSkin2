@@ -230,7 +230,8 @@ public class WebSkinManager {
             return entry != null && entry.value != null;
         }
         this.syncFromDisk();
-        return this.skins.containsKey(username.toLowerCase());
+        WebEntry entry = this.skins.get(username.toLowerCase());
+        return entry != null && entry.value != null;
     }
 
     public void put(String username, SkinData skinData, byte[] pngBytes, String model) {
@@ -313,13 +314,18 @@ public class WebSkinManager {
         LinkedHashMap<String, WebEntry> sorted = new LinkedHashMap<String, WebEntry>();
         if (this.db != null) {
             for (Map.Entry<String, WebEntry> e2 : this.db.loadAllWebSkins().entrySet()) {
-                sorted.put(e2.getKey().toLowerCase(), e2.getValue());
+                WebEntry val = e2.getValue();
+                if (val == null || val.value == null) continue;
+                sorted.put(e2.getKey().toLowerCase(), val);
             }
         } else {
             this.syncFromDisk();
-            this.skins.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> sorted.put((String)e.getKey(), (WebEntry)e.getValue()));
+            this.skins.entrySet().stream()
+                    .filter(e -> e.getValue() != null && e.getValue().value != null)
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> sorted.put(e.getKey(), e.getValue()));
         }
-        sorted.forEach((name, entry) -> list.add(new WebSkinInfo((String)name, new SkinData(entry.value, entry.signature, "web"), entry.model, entry.timestamp)));
+        sorted.forEach((name, entry) -> list.add(new WebSkinInfo(name, new SkinData(entry.value, entry.signature, "web"), entry.model, entry.timestamp)));
         return list;
     }
 

@@ -93,6 +93,7 @@ public class WebLang {
         this.texts.put("admin-del-fail", "\u5220\u9664\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5");
         this.texts.put("admin-yes", "\u6709");
         this.texts.put("admin-no", "\u65e0");
+        this.texts.put("date-format", "yyyy-MM-dd HH:mm");
     }
 
     private void loadEnglish() {
@@ -155,5 +156,6 @@ public class WebLang {
         this.texts.put("admin-del-fail", "Delete failed, try again");
         this.texts.put("admin-yes", "Yes");
         this.texts.put("admin-no", "No");
+        this.texts.put("date-format", "yyyy-MM-dd HH:mm");
     }
 }
