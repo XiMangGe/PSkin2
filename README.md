@@ -226,7 +226,9 @@ debug: false                      # 调试模式
 
 ## 命令大全
 
-主命令：`/pskin`（别名：`/skinp`、`/skin`）
+主命令：`/pskin`
+
+> **命令前缀说明**：本插件只注册 `/pskin` 一个主命令，不提供 `/skin`、`/skinp` 等别名，避免与其他皮肤插件（如 SkinsRestorer、ChangeSkin 等）的命令冲突。如果需要短命令，可在服务端用 `commands.yml` 自行映射。
 
 | 命令 | 说明 | 权限 |
 |------|------|------|

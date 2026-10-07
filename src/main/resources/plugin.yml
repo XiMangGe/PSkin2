@@ -1,5 +1,5 @@
 name: PSkin2
-version: 26.10.7.1
+version: 26.10.7.2
 main: com.pskin.PSkinPlugin
 api-version: '1.20'
 authors: [PSkin]
@@ -12,7 +12,6 @@ commands:
     description: PSkin main command
     usage: /pskin <set|url|source|delete|web|clear|update|info|apply|status|reload|help>
     permission: pskin.use
-    aliases: [skinp, skin]
 
 permissions:
   pskin.use:
