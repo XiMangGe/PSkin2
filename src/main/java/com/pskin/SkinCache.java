@@ -328,9 +328,9 @@ public class SkinCache {
 
     public Map<String, SkinData> getAllEntries() {
         LinkedHashMap<String, SkinData> result = new LinkedHashMap<String, SkinData>();
+        long now = System.currentTimeMillis();
+        long ttl = this.getTtlMillis();
         if (this.db != null) {
-            long now = System.currentTimeMillis();
-            long ttl = this.getTtlMillis();
             for (Map.Entry<String, CachedEntry> e : this.db.loadAllCacheEntries().entrySet()) {
                 boolean expired;
                 if (e.getValue() == null || e.getValue().value == null) continue;
@@ -341,7 +341,12 @@ public class SkinCache {
             return result;
         }
         this.syncFromDisk();
-        return new ConcurrentHashMap<String, SkinData>(this.cache);
+        for (Map.Entry<String, SkinData> e : this.cache.entrySet()) {
+            boolean manual = this.manualSet.containsKey(e.getKey());
+            if (!manual && ttl > 0L && now - e.getValue().getTimestamp() >= ttl) continue;
+            result.put(e.getKey(), e.getValue());
+        }
+        return result;
     }
 
     static class CachedEntry {

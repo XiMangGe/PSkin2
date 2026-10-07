@@ -170,26 +170,22 @@ public class SkinResolveService {
                 return;
             }
             for (String entry : this.config.getSkinPriority()) {
-                switch (entry.toLowerCase()) {
-                    case "web": 
-                    case "manual": {
-                        break;
-                    }
-                    case "mojang": 
-                    case "littleskin": {
-                        SkinFetchResult result = this.providerManager.resolveSkin(remoteName, entry).join();
-                        if (!result.isSuccess()) break;
-                        this.skinCache.put(name, result.getSkinData(), false);
-                        this.skinApplier.applySkin(player, result.getSkinData());
-                        if (this.config.isDebug()) {
-                            this.plugin.getLogger().info("\u81ea\u52a8\u5e94\u7528 " + name + " \u7684\u76ae\u80a4\uff08\u67e5\u8be2\u540d: " + remoteName + "\uff0c\u6765\u6e90: " + result.getSkinData().getDisplaySource() + "\uff09");
-                        }
-                        if (player.isOnline()) {
-                            this.notifyJoinResult(player, joinBanner, name, result.getSkinData().getDisplaySource(), true);
-                        }
-                        return;
-                    }
+                String lower = entry.toLowerCase();
+                if ("web".equals(lower) || "manual".equals(lower)) {
+                    continue;
                 }
+                // mojang / littleskin / 自定义皮肤站
+                SkinFetchResult result = this.providerManager.resolveSkin(remoteName, entry).join();
+                if (!result.isSuccess()) continue;
+                this.skinCache.put(name, result.getSkinData(), false);
+                this.skinApplier.applySkin(player, result.getSkinData());
+                if (this.config.isDebug()) {
+                    this.plugin.getLogger().info("\u81ea\u52a8\u5e94\u7528 " + name + " \u7684\u76ae\u80a4\uff08\u67e5\u8be2\u540d: " + remoteName + "\uff0c\u6765\u6e90: " + result.getSkinData().getDisplaySource() + "\uff09");
+                }
+                if (player.isOnline()) {
+                    this.notifyJoinResult(player, joinBanner, name, result.getSkinData().getDisplaySource(), true);
+                }
+                return;
             }
         }
         if (this.config.isDefaultSkinEnabled()) {

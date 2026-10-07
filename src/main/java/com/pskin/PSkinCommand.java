@@ -244,7 +244,7 @@ TabCompleter {
         } else if (args.length == 2) {
             boolean isSourceArg;
             String a1 = args[1];
-            boolean bl = isSourceArg = "reset".equalsIgnoreCase(a1) || SourceLockManager.normalizeSource(a1) != null;
+            boolean bl = isSourceArg = "reset".equalsIgnoreCase(a1) || SourceLockManager.normalizeSource(a1) != null || (this.config.isCustomYggdrasil(a1) && this.config.isCustomYggdrasilEnabled(a1));
             if (isSourceArg) {
                 Player p = this.requirePlayer(sender);
                 if (p == null) {
@@ -283,6 +283,12 @@ TabCompleter {
             return;
         }
         String normalized = SourceLockManager.normalizeSource(sourceArg);
+        if (normalized == null) {
+            // 检查是否是自定义皮肤站名称
+            if (this.config.isCustomYggdrasil(sourceArg) && this.config.isCustomYggdrasilEnabled(sourceArg)) {
+                normalized = sourceArg.toLowerCase();
+            }
+        }
         if (normalized == null) {
             this.messages.send(sender, "source-invalid", new Object[0]);
             return;

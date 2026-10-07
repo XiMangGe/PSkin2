@@ -141,9 +141,21 @@ extends JavaPlugin {
         this.resolveService = new SkinResolveService(this, this.config, this.providerManager, this.skinApplier, this.skinCache, this.webSkinManager, this.sourceLockManager, this.messages, this.webServer);
         this.getServer().getPluginManager().registerEvents((Listener)new JoinListener(this, this.config, this.resolveService), (Plugin)this);
         if (this.config.isAuthmeIntegration()) {
-            this.authmeActive = new AuthMeListener(this, this.config, this.resolveService).tryRegister();
+            AuthMeListener authMeListener = new AuthMeListener(this, this.config, this.resolveService);
+            this.authmeActive = authMeListener.tryRegister();
             if (this.authmeActive) {
-                this.getLogger().info("AuthMe \u96c6\u6210\u5df2\u63a5\u7ba1\u8fdb\u670d\u76ae\u80a4\u5e94\u7528\uff08\u907f\u514d\u6a2a\u5e45\u91cd\u590d\u663e\u793a\u4e24\u6b21\uff09");
+                this.getLogger().info("AuthMe 集成已接管进服皮肤应用（避免横幅重复显示两次）");
+            } else {
+                // 可能是插件加载顺序问题（PSkin2 比 AuthMe 先加载），延迟 20 tick 后重试
+                this.getLogger().info("AuthMe 暂未检测到，延迟 1 秒后重试（可能是加载顺序问题）...");
+                Bukkit.getScheduler().runTaskLater((Plugin)this, () -> {
+                    if (!this.authmeActive) {
+                        this.authmeActive = authMeListener.tryRegister();
+                        if (this.authmeActive) {
+                            this.getLogger().info("AuthMe 集成（延迟重试）已接管进服皮肤应用");
+                        }
+                    }
+                }, 20L);
             }
         }
         this.webServer.start();

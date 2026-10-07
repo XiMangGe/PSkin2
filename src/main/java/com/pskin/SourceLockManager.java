@@ -65,12 +65,15 @@ public class SourceLockManager {
             Map<?, ?> loaded = (Map<?, ?>)this.gson.fromJson((Reader)reader, type);
             if (loaded != null) {
                 for (Map.Entry<?, ?> e : loaded.entrySet()) {
-                    String normalized = SourceLockManager.normalizeSource((String)e.getValue());
-                    if (e.getKey() == null || normalized == null) {
+                    String raw = (String)e.getValue();
+                    String normalized = SourceLockManager.normalizeSource(raw);
+                    // 支持自定义皮肤站名称：normalizeSource 返回 null 时保留原值
+                    String finalSource = normalized != null ? normalized : (raw != null ? raw.toLowerCase().trim() : null);
+                    if (e.getKey() == null || finalSource == null || finalSource.isEmpty()) {
                         this.plugin.getLogger().warning("\u6765\u6e90\u9501\u5b9a\u6587\u4ef6\u4e2d\u5b58\u5728\u65e0\u6548\u6761\u76ee\uff0c\u5df2\u8df3\u8fc7: " + String.valueOf(e.getKey()) + " = " + String.valueOf(e.getValue()));
                         continue;
                     }
-                    this.locks.put(((String)e.getKey()).toLowerCase(), normalized);
+                    this.locks.put(((String)e.getKey()).toLowerCase(), finalSource);
                 }
             }
             if (!quiet) {
@@ -115,9 +118,11 @@ public class SourceLockManager {
             if (loaded != null) {
                 for (Map.Entry<?, ?> e : loaded.entrySet()) {
                     String key;
-                    String normalized = SourceLockManager.normalizeSource((String)e.getValue());
-                    if (e.getKey() == null || normalized == null || this.locks.containsKey(key = ((String)e.getKey()).toLowerCase())) continue;
-                    this.locks.put(key, normalized);
+                    String raw = (String)e.getValue();
+                    String normalized = SourceLockManager.normalizeSource(raw);
+                    String finalSource = normalized != null ? normalized : (raw != null ? raw.toLowerCase().trim() : null);
+                    if (e.getKey() == null || finalSource == null || finalSource.isEmpty() || this.locks.containsKey(key = ((String)e.getKey()).toLowerCase())) continue;
+                    this.locks.put(key, finalSource);
                     ++imported;
                 }
             }
@@ -147,9 +152,11 @@ public class SourceLockManager {
             Map<?, ?> loaded = (Map<?, ?>)this.gson.fromJson((Reader)reader, type);
             if (loaded != null) {
                 for (Map.Entry<?, ?> e : loaded.entrySet()) {
-                    String normalized = SourceLockManager.normalizeSource((String)e.getValue());
-                    if (e.getKey() == null || normalized == null) continue;
-                    this.db.importLock(((String)e.getKey()).toLowerCase(), normalized);
+                    String raw = (String)e.getValue();
+                    String normalized = SourceLockManager.normalizeSource(raw);
+                    String finalSource = normalized != null ? normalized : (raw != null ? raw.toLowerCase().trim() : null);
+                    if (e.getKey() == null || finalSource == null || finalSource.isEmpty()) continue;
+                    this.db.importLock(((String)e.getKey()).toLowerCase(), finalSource);
                     ++imported;
                 }
             }
@@ -213,15 +220,14 @@ public class SourceLockManager {
 
     public void set(String username, String source) {
         String normalized = SourceLockManager.normalizeSource(source);
-        if (normalized == null) {
-            return;
-        }
+        // normalizeSource 返回 null 时，假设是自定义皮肤站名称（已由调用方验证）
+        String finalSource = normalized != null ? normalized : source.toLowerCase().trim();
         if (this.db != null) {
-            this.db.saveLock(username.toLowerCase(), normalized);
+            this.db.saveLock(username.toLowerCase(), finalSource);
             return;
         }
         this.syncFromDisk();
-        this.locks.put(username.toLowerCase(), normalized);
+        this.locks.put(username.toLowerCase(), finalSource);
         this.save();
     }
 

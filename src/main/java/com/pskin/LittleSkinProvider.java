@@ -118,7 +118,7 @@ implements SkinProvider {
                 if (sessionResp.statusCode() != 200) {
                     return SkinFetchResult.apiError();
                 }
-                return MojangSkinProvider.extractTextures(sessionResp.body(), "LittleSkin");
+                return MojangSkinProvider.extractTextures(sessionResp.body(), this.displayName);
             }
             catch (Exception e) {
                 return SkinFetchResult.unknownError();

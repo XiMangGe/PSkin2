@@ -520,7 +520,7 @@ public class WebServer {
             if (i > 0) {
                 sb.append(",");
             }
-            sb.append("{\"name\":\"").append(WebServer.escapeJson(info.name)).append("\",\"source\":\"web\",\"model\":\"").append(info.model).append("\"}");
+            sb.append("{\"name\":\"").append(WebServer.escapeJson(info.name)).append("\",\"source\":\"web\",\"model\":\"").append(WebServer.escapeJson(info.model)).append("\"}");
         }
         sb.append("]");
         this.sendJson(ex, 200, sb.toString());
@@ -601,6 +601,11 @@ public class WebServer {
             this.sendError(ex, 400, "bad request");
             return;
         }
+        // 防止路径遍历：name 只能包含合法字符
+        if (!name.matches("[._A-Za-z0-9-]{1,20}")) {
+            this.sendError(ex, 400, "bad request");
+            return;
+        }
         if ("skin".equals(type)) {
             removed = this.webSkinManager.remove(name);
             what = "skin";
@@ -663,10 +668,11 @@ public class WebServer {
         StringBuilder cards = new StringBuilder();
         for (GalleryEntry e : entries) {
             String imgSrc = e.imageUrl;
-            String badgeClass = "badge-" + e.source;
+            String safeSource = e.source == null ? "cache" : e.source.toLowerCase().replaceAll("[^a-z0-9]", "");
+            String badgeClass = "badge-" + safeSource;
             String badgeText = this.badgeText(e.source);
             String bedrockBadge = this.config.isBedrockPlayer(e.name) ? "<span class=\"badge badge-bedrock\">" + this.lang.get("badge-bedrock") + "</span>" : "";
-            cards.append("<div class=\"card-skin\" data-name=\"").append(WebServer.htmlEscape(e.name.toLowerCase())).append("\"><div class=\"head\" style=\"background-image:url('").append(WebServer.htmlEscape(imgSrc)).append("')\"></div><div class=\"pname\">").append(WebServer.htmlEscape(e.name)).append("</div><div class=\"badges\"><span class=\"badge ").append(badgeClass).append("\">").append(badgeText).append("</span>").append(bedrockBadge).append("</div></div>");
+            cards.append("<div class=\"card-skin\" data-name=\"").append(WebServer.htmlEscape(e.name.toLowerCase())).append("\"><div class=\"head\" style=\"background-image:url('").append(WebServer.htmlEscape(imgSrc)).append("')\"></div><div class=\"pname\">").append(WebServer.htmlEscape(e.name)).append("</div><div class=\"badges\"><span class=\"badge ").append(badgeClass).append("\">").append(WebServer.htmlEscape(badgeText)).append("</span>").append(bedrockBadge).append("</div></div>");
         }
         if (entries.isEmpty()) {
             cards.append("<p class=\"empty\">").append(this.lang.get("gallery-empty")).append("</p>");

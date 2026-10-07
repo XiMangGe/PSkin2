@@ -236,7 +236,11 @@ public class PSkinConfig {
         this.webAdminPassword = adminPwd == null ? "" : adminPwd.trim();
         this.webFilesEnabled = cfg.getBoolean("web.files-enabled", true);
         String wff = cfg.getString("web.files-folder", "Web");
-        this.webFilesFolder = wff == null || wff.trim().isEmpty() ? "Web" : wff.trim();
+        if (wff == null || wff.trim().isEmpty() || wff.contains("..") || wff.contains("/") || wff.contains("\\")) {
+            this.webFilesFolder = "Web";
+        } else {
+            this.webFilesFolder = wff.trim();
+        }
         this.commandCooldown = cfg.getInt("commands.cooldown-seconds", 30);
         this.skinCacheMinutes = cfg.getInt("skin-cache-minutes", 720);
         String storageType = cfg.getString("storage.type", "file");
