@@ -504,17 +504,5 @@ bedrock:
 
 ## 更新日志
 
-### v26.10.4.1
-- ✨ 新增：支持通过配置文件添加多个自定义 Yggdrasil 皮肤站
-- 🔧 修复：8 个逻辑 bug（XSS、NPE、TTL 不一致等）
-- 🔧 跨版本兼容：Paper API 改反射，支持 1.20 ~ 最新版
+完整更新记录见 [GitHub Releases](https://github.com/XiMangGe/PSkin2/releases)。
 
-### v26.8.30.3
-- 🔧 跨版本兼容改造
-- 🔧 修复反编译垃圾变量和类型安全问题
-
----
-
-## License
-
-本插件仅供学习和个人服务器使用。
