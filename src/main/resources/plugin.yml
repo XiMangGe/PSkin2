@@ -1,10 +1,10 @@
 name: PSkin2
-version: 26.10.7.2
+version: 26.10.11.1
 main: com.pskin.PSkinPlugin
 api-version: '1.20'
 authors: [PSkin]
 description: Unified skin plugin (cross-version compatible) - Mojang, LittleSkin, web upload and offline skins
-website: https://github.com/pskin
+website: https://github.com/XiMangGe/PSkin2
 softdepend: [AuthMe]
 
 commands:

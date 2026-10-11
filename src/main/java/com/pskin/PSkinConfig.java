@@ -258,7 +258,7 @@ public class PSkinConfig {
         String tblPrefix = cfg.getString("storage.mysql.table-prefix", "pskin_");
         this.mySqlTablePrefix = tblPrefix == null || tblPrefix.trim().isEmpty() ? "pskin_" : tblPrefix.trim();
         this.mySqlUseSsl = cfg.getBoolean("storage.mysql.use-ssl", false);
-        this.userAgent = cfg.getString("user-agent", "PSkin2/26.8.25.5");
+        this.userAgent = cfg.getString("user-agent", "PSkin2/26.10.11.1");
         this.refreshVisibility = cfg.getBoolean("refresh-visibility", false);
         this.debug = cfg.getBoolean("debug", false);
     }
@@ -370,6 +370,23 @@ public class PSkinConfig {
     public int getCustomYggdrasilTimeout(String name) {
         String key = this.resolveProviderKey(name);
         return Math.max(3, this.plugin.getConfig().getInt("providers." + key + ".timeout-seconds", 10));
+    }
+
+    /**
+     * 获取所有自定义 Yggdrasil 皮肤站名称（保持配置中的原始大小写），用于 Tab 补全等场景。
+     */
+    public List<String> getCustomProviderNames() {
+        List<String> names = new ArrayList<String>();
+        ConfigurationSection providers = this.plugin.getConfig().getConfigurationSection("providers");
+        if (providers != null) {
+            for (String key : providers.getKeys(false)) {
+                String type = providers.getString(key + ".type", "");
+                if ("yggdrasil".equalsIgnoreCase(type)) {
+                    names.add(key);
+                }
+            }
+        }
+        return names;
     }
 
     public boolean isAutoApplyOnJoin() {

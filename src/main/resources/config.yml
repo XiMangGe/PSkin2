@@ -57,7 +57,7 @@ join-notify:
 # 开启后，插件会在 AuthMe 登录验证通过之后再重新应用皮肤，避免被覆盖。
 # 服务器没装 AuthMe 请保持 false。
 authme:
-  enabled: true
+  enabled: false
 
 # ================================
 # 皮肤解析规则（进服和指令共用同一套规则）

@@ -34,11 +34,11 @@ implements Listener {
         // 先用插件管理器检测 AuthMe 插件是否存在
         Plugin authme = Bukkit.getPluginManager().getPlugin("AuthMe");
         if (authme == null) {
-            this.plugin.getLogger().info("未检测到 AuthMe 插件（plugins/ 目录中无 AuthMe.jar），已关闭 AuthMe 集成");
+            this.plugin.getLogger().info("未检测到 AuthMe 插件，已跳过 AuthMe 集成");
             return false;
         }
         if (!authme.isEnabled()) {
-            this.plugin.getLogger().info("AuthMe 插件存在但未启用，已关闭 AuthMe 集成");
+            this.plugin.getLogger().info("AuthMe 插件存在但未启用，已跳过 AuthMe 集成");
             return false;
         }
         String version = authme.getDescription().getVersion();

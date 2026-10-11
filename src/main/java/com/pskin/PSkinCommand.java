@@ -369,27 +369,29 @@ TabCompleter {
     }
 
     private void handleClear(CommandSender sender, String[] args) {
-        Player player = this.requirePlayer(sender);
-        if (player == null) {
-            return;
-        }
-        String target = player.getName();
-        boolean isAdmin = player.hasPermission("pskin.admin");
+        boolean isAdmin = sender.hasPermission("pskin.admin");
+        String target;
         if (args.length >= 2) {
-            if (isAdmin) {
-                target = args[1];
-            } else {
+            // 管理员（含控制台）可清除指定玩家的皮肤
+            if (!isAdmin) {
                 this.messages.send(sender, "usage-clear", new Object[0]);
                 return;
             }
+            target = args[1];
+        } else {
+            Player player = this.requirePlayer(sender);
+            if (player == null) {
+                return;
+            }
+            target = player.getName();
         }
         this.skinCache.remove(target);
         this.webSkinManager.remove(target);
-        this.messages.send((CommandSender)player, "skin-cleared", target);
+        this.messages.send(sender, "skin-cleared", target);
         Player targetPlayer = Bukkit.getPlayerExact((String)target);
         if (targetPlayer != null && targetPlayer.isOnline()) {
             this.resolveService.resolveAndApply(targetPlayer);
-            this.messages.send((CommandSender)player, "skin-cleared-reapply", new Object[0]);
+            this.messages.send(sender, "skin-cleared-reapply", new Object[0]);
         }
     }
 
@@ -581,6 +583,8 @@ TabCompleter {
             return false;
         }
         long now = System.currentTimeMillis();
+        // 清理已过期的冷却记录，避免 map 无限增长
+        this.cooldowns.entrySet().removeIf(e -> now - e.getValue() >= (long)cooldown * 1000L);
         Long last = this.cooldowns.get(player.getUniqueId());
         if (last != null && now - last < (long)cooldown * 1000L) {
             long remaining = ((long)cooldown * 1000L - (now - last) + 999L) / 1000L;
@@ -703,6 +707,12 @@ TabCompleter {
             switch (sub = args[0].toLowerCase()) {
                 case "source": {
                     ArrayList<String> options = new ArrayList<String>(SOURCE_OPTIONS);
+                    // 加入自定义 Yggdrasil 皮肤站名称
+                    for (String custom : this.config.getCustomProviderNames()) {
+                        if (!options.contains(custom)) {
+                            options.add(custom);
+                        }
+                    }
                     if (sender.hasPermission("pskin.admin")) {
                         Bukkit.getOnlinePlayers().stream().map(Player::getName).forEach(options::add);
                     }
@@ -727,7 +737,13 @@ TabCompleter {
             return new ArrayList<String>();
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("source") && sender.hasPermission("pskin.admin")) {
-            return SOURCE_OPTIONS.stream().filter(s -> s.startsWith(args[2].toLowerCase())).collect(Collectors.toList());
+            ArrayList<String> srcOptions = new ArrayList<String>(SOURCE_OPTIONS);
+            for (String custom : this.config.getCustomProviderNames()) {
+                if (!srcOptions.contains(custom)) {
+                    srcOptions.add(custom);
+                }
+            }
+            return srcOptions.stream().filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase())).collect(Collectors.toList());
         }
         return new ArrayList<String>();
     }

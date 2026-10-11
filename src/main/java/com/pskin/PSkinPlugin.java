@@ -145,9 +145,9 @@ extends JavaPlugin {
             this.authmeActive = authMeListener.tryRegister();
             if (this.authmeActive) {
                 this.getLogger().info("AuthMe 集成已接管进服皮肤应用（避免横幅重复显示两次）");
-            } else {
-                // 可能是插件加载顺序问题（PSkin2 比 AuthMe 先加载），延迟 20 tick 后重试
-                this.getLogger().info("AuthMe 暂未检测到，延迟 1 秒后重试（可能是加载顺序问题）...");
+            } else if (Bukkit.getPluginManager().getPlugin("AuthMe") != null) {
+                // AuthMe 已安装但事件注册失败（可能是加载顺序问题），延迟 20 tick 后重试
+                this.getLogger().info("AuthMe 已安装但集成未就绪，延迟 1 秒后重试...");
                 Bukkit.getScheduler().runTaskLater((Plugin)this, () -> {
                     if (!this.authmeActive) {
                         this.authmeActive = authMeListener.tryRegister();

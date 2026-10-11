@@ -305,7 +305,8 @@ public class WebServer {
 
     private void handleGallery(HttpExchange ex) throws IOException {
         try {
-            if (!ex.getRequestURI().getPath().startsWith("/skins")) {
+            String path = ex.getRequestURI().getPath();
+            if (!path.equals("/skins") && !path.equals("/skins/")) {
                 this.sendHtml(ex, 404, this.render404());
                 return;
             }
@@ -416,7 +417,7 @@ public class WebServer {
         String name;
         String contentType = ex.getRequestHeaders().getFirst("Content-Type");
         if (contentType == null || !contentType.toLowerCase().startsWith("multipart/form-data")) {
-            this.sendError(ex, 400, this.lang.get("err-server"));
+            this.sendError(ex, 400, this.lang.get("err-request"));
             return;
         }
         int maxBody = (this.config.getWebMaxUploadKb() + 64) * 1024;

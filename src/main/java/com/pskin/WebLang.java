@@ -66,6 +66,7 @@ public class WebLang {
         this.texts.put("err-size", "\u76ae\u80a4\u5c3a\u5bf8\u4e0d\u6b63\u786e\uff01\u8bf7\u4f7f\u7528 64x64\u300164x32 \u6216 128x128 \u7b49\u6807\u51c6\u76ae\u80a4\u5c3a\u5bf8");
         this.texts.put("err-rate", "\u76ae\u80a4\u751f\u6210\u670d\u52a1\u7e41\u5fd9\uff08\u5df2\u81ea\u52a8\u91cd\u8bd5\u4ecd\u53d7\u9650\uff09\uff0c\u8bf7 1 \u5206\u949f\u540e\u518d\u8bd5");
         this.texts.put("err-server", "\u670d\u52a1\u5668\u5185\u90e8\u9519\u8bef\uff0c\u8bf7\u8054\u7cfb\u7ba1\u7406\u5458");
+        this.texts.put("err-request", "\u8bf7\u6c42\u683c\u5f0f\u9519\u8bef");
         this.texts.put("err-network", "\u65e0\u6cd5\u8fde\u63a5\u76ae\u80a4\u751f\u6210\u670d\u52a1\uff08\u5df2\u81ea\u52a8\u91cd\u8bd5\u591a\u6b21\uff09\u3002\u8bf7\u7a0d\u540e\u518d\u8bd5\uff1b\u82e5\u6301\u7eed\u5931\u8d25\uff0c\u8bf7\u7ba1\u7406\u5458\u68c0\u67e5 config.yml \u4e2d mineskin.api-url \u7684\u8fde\u901a\u6027");
         this.texts.put("footer-note", "\u76ae\u80a4\u7531\u670d\u52a1\u5668\u7edf\u4e00\u5e94\u7528\uff0c\u6240\u6709\u73a9\u5bb6\u53ef\u89c1");
         this.texts.put("tab-skin", "\u4e0a\u4f20\u76ae\u80a4");
@@ -129,6 +130,7 @@ public class WebLang {
         this.texts.put("err-size", "Invalid skin dimensions! Use 64x64, 64x32 or 128x128");
         this.texts.put("err-rate", "Skin service is busy (auto-retried, still limited). Try again in 1 minute");
         this.texts.put("err-server", "Internal server error, contact admin");
+        this.texts.put("err-request", "Malformed request");
         this.texts.put("err-network", "Cannot reach skin service (auto-retried). Try later; if it keeps failing, ask admin to check mineskin.api-url connectivity");
         this.texts.put("footer-note", "Skins are applied server-side, visible to all players");
         this.texts.put("tab-skin", "Upload Skin");
