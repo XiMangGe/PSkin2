@@ -48,7 +48,11 @@ public class SkinApplier {
                 boolean strip = this.config.isStripSignature() && skinData.hasSignature();
                 this.setTextures(player, skinData.getValue(),
                         (skinData.hasSignature() && !strip) ? skinData.getSignature() : null);
-                if (!this.tryRefreshPlayer(player) && this.config.isRefreshVisibility()) {
+                if (!this.tryRefreshPlayer(player)) {
+                    // refreshPlayer 不可用时的必要兜底：不 hide/show 的话其他客户端不会重新渲染皮肤
+                    this.refreshForOthers(player);
+                } else if (this.config.isRefreshVisibility()) {
+                    // 强力模式：常规刷新之外再对全体玩家强制刷新一轮可见性
                     this.refreshForOthers(player);
                 }
                 if (this.config.isDebug()) {
@@ -72,7 +76,9 @@ public class SkinApplier {
                     return;
                 }
                 this.setTextures(player, null, null);
-                if (!this.tryRefreshPlayer(player) && this.config.isRefreshVisibility()) {
+                if (!this.tryRefreshPlayer(player)) {
+                    this.refreshForOthers(player);
+                } else if (this.config.isRefreshVisibility()) {
                     this.refreshForOthers(player);
                 }
             } catch (Exception e) {

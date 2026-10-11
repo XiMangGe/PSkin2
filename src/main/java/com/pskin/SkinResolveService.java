@@ -66,6 +66,10 @@ public class SkinResolveService {
     }
 
     private void resolveAndApply(Player player, ApplyType type, boolean joinBanner) {
+        this.resolveAndApplyInternal(player, type, joinBanner, false);
+    }
+
+    private void resolveAndApplyInternal(Player player, ApplyType type, boolean joinBanner, boolean isRetry) {
         if (player == null || !player.isOnline()) {
             return;
         }
@@ -74,14 +78,36 @@ public class SkinResolveService {
         }
         ApplyType finalType = type;
         boolean banner = joinBanner;
+        boolean retry = isRetry;
         if (Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTaskAsynchronously((Plugin)this.plugin, () -> this.resolveNow(player, finalType, banner));
+            Bukkit.getScheduler().runTaskAsynchronously((Plugin)this.plugin, () -> this.resolveNow(player, finalType, banner, retry));
         } else {
-            this.resolveNow(player, finalType, banner);
+            this.resolveNow(player, finalType, banner, retry);
         }
     }
 
-    private void resolveNow(Player player, ApplyType type, boolean joinBanner) {
+    /**
+     * 判断失败是否值得自动重试：网络类错误（超时/断网/限流/API 异常等）是偶发的，
+     * 重试有意义；NOT_FOUND 是确定性结果（该皮肤站上没有这个玩家的皮肤），重试无意义。
+     */
+    private static boolean isRetryableFailure(SkinFetchResult result) {
+        if (result == null) {
+            return false;
+        }
+        switch (result.getStatus()) {
+            case TIMEOUT:
+            case NETWORK_ERROR:
+            case RATE_LIMITED:
+            case API_ERROR:
+            case INVALID_RESPONSE:
+            case UNKNOWN_ERROR:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void resolveNow(Player player, ApplyType type, boolean joinBanner, boolean isRetry) {
         SkinData manual;
         SkinData webSkin;
         String name = player.getName();
@@ -131,7 +157,7 @@ public class SkinResolveService {
             if (this.config.isDebug()) {
                 this.plugin.getLogger().info(name + " \u6765\u6e90\u9501\u5b9a\u4e3a " + lock + "\uff0c\u6309\u9501\u5b9a\u6765\u6e90\u67e5\u8be2\uff08\u67e5\u8be2\u540d: " + remoteName + "\uff09");
             }
-            this.resolveRemote(player, remoteName, lock, name, type, joinBanner);
+            this.resolveRemote(player, remoteName, lock, name, type, joinBanner, isRetry);
             return;
         }
         if ((!bedrock || this.config.isBedrockApplyCustomSkins()) && (webSkin = this.webSkinManager.get(name)) != null) {
@@ -169,6 +195,7 @@ public class SkinResolveService {
                 }
                 return;
             }
+            SkinFetchResult lastFailure = null;
             for (String entry : this.config.getSkinPriority()) {
                 String lower = entry.toLowerCase();
                 if ("web".equals(lower) || "manual".equals(lower)) {
@@ -176,7 +203,10 @@ public class SkinResolveService {
                 }
                 // mojang / littleskin / 自定义皮肤站
                 SkinFetchResult result = this.providerManager.resolveSkin(remoteName, entry).join();
-                if (!result.isSuccess()) continue;
+                if (!result.isSuccess()) {
+                    lastFailure = result;
+                    continue;
+                }
                 this.skinCache.put(name, result.getSkinData(), false);
                 this.skinApplier.applySkin(player, result.getSkinData());
                 if (this.config.isDebug()) {
@@ -185,6 +215,18 @@ public class SkinResolveService {
                 if (player.isOnline()) {
                     this.notifyJoinResult(player, joinBanner, name, result.getSkinData().getDisplaySource(), true);
                 }
+                return;
+            }
+            // 网络类失败自动重试一次：进服瞬间偶发超时/限流时玩家无需手动刷新
+            if (!isRetry && isRetryableFailure(lastFailure) && player.isOnline()) {
+                if (this.config.isDebug()) {
+                    this.plugin.getLogger().info(name + " \u76ae\u80a4\u89e3\u6790\u5931\u8d25\uff08" + lastFailure.getStatus() + "\uff09\uff0c5 \u79d2\u540e\u81ea\u52a8\u91cd\u8bd5");
+                }
+                Bukkit.getScheduler().runTaskLater((Plugin)this.plugin, () -> {
+                    if (player.isOnline()) {
+                        this.resolveAndApplyInternal(player, type, false, true);
+                    }
+                }, 100L);
                 return;
             }
         }
@@ -200,7 +242,7 @@ public class SkinResolveService {
         }
     }
 
-    private void resolveRemote(Player player, String remoteName, String source, String name, ApplyType type, boolean joinBanner) {
+    private void resolveRemote(Player player, String remoteName, String source, String name, ApplyType type, boolean joinBanner, boolean isRetry) {
         if (!player.isOnline()) {
             return;
         }
@@ -214,13 +256,25 @@ public class SkinResolveService {
             if (player.isOnline()) {
                 this.notifyJoinResult(player, joinBanner, name, result.getSkinData().getDisplaySource(), true);
             }
-        } else {
-            this.skinApplier.clearSkin(player);
-            if (joinBanner && this.config.isJoinNotifyEnabled() && player.isOnline()) {
-                this.sendJoinBanner(player, this.config.getJoinNotifyFail(), name, source);
-            }
-            this.applyDefaultSkin(player, name, type);
+            return;
         }
+        // 网络类失败自动重试一次（仍按来源锁定解析）
+        if (!isRetry && isRetryableFailure(result) && player.isOnline()) {
+            if (this.config.isDebug()) {
+                this.plugin.getLogger().info(name + " \u6765\u6e90 " + source + " \u89e3\u6790\u5931\u8d25\uff08" + result.getStatus() + "\uff09\uff0c5 \u79d2\u540e\u81ea\u52a8\u91cd\u8bd5");
+            }
+            Bukkit.getScheduler().runTaskLater((Plugin)this.plugin, () -> {
+                if (player.isOnline()) {
+                    this.resolveAndApplyInternal(player, type, false, true);
+                }
+            }, 100L);
+            return;
+        }
+        this.skinApplier.clearSkin(player);
+        if (joinBanner && this.config.isJoinNotifyEnabled() && player.isOnline()) {
+            this.sendJoinBanner(player, this.config.getJoinNotifyFail(), name, source);
+        }
+        this.applyDefaultSkin(player, name, type);
     }
 
     private void notifyJoinResult(Player player, boolean joinBanner, String name, String source, boolean success) {
