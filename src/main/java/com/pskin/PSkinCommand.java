@@ -421,13 +421,16 @@ TabCompleter {
             }
             return;
         }
-        SkinData webSkin = this.webSkinManager.get(name);
-        if (webSkin != null) {
-            this.skinApplier.applySkin(player, webSkin);
-            this.messages.send((CommandSender)player, "web-skin-applied", new Object[0]);
-            return;
+        // 网站上传皮肤仅在未锁定来源时独占使用（与进服解析规则一致）
+        if (lock == null) {
+            SkinData webSkin = this.webSkinManager.get(name);
+            if (webSkin != null) {
+                this.skinApplier.applySkin(player, webSkin);
+                this.messages.send((CommandSender)player, "web-skin-applied", new Object[0]);
+                return;
+            }
+            this.skinCache.invalidate(name);
         }
-        this.skinCache.invalidate(name);
         String lookupName = this.config.isBedrockPlayer(name) ? this.config.stripBedrockPrefix(name) : name;
         this.providerManager.resolveSkin(lookupName, lock).thenAccept(result -> Bukkit.getScheduler().runTask((Plugin)this.plugin, () -> {
             if (!player.isOnline()) {
@@ -513,6 +516,15 @@ TabCompleter {
                 this.messages.send(sender, "skin-cleared", targetName);
             }
             return;
+        }
+        // 未锁定来源时网站上传皮肤独占（与进服解析规则一致）
+        if (lock == null) {
+            SkinData webSkin = this.webSkinManager.get(targetName);
+            if (webSkin != null) {
+                this.skinApplier.applySkin(target, webSkin);
+                this.messages.send(sender, "apply-success", targetName, webSkin.getDisplaySource());
+                return;
+            }
         }
         this.providerManager.resolveSkin(lookupName, lock).thenAccept(result -> Bukkit.getScheduler().runTask((Plugin)this.plugin, () -> {
             if (result.isSuccess()) {

@@ -17,6 +17,8 @@ import com.pskin.SkinProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -25,6 +27,10 @@ public class SkinProviderManager {
     private final PSkinConfig config;
     private final JavaPlugin plugin;
     private final MineskinResigner mineskinResigner;
+    // 专用解析线程池：resolveSkin 的外层任务会阻塞等待 fetchSkin 完成，
+    // 不能放在 ForkJoinPool.commonPool 上，否则并发解析时外层任务占满
+    // commonPool 线程、内层任务永远排队，导致线程饥饿死锁
+    private final ExecutorService resolveExecutor;
 
     public SkinProviderManager(JavaPlugin plugin, PSkinConfig config) {
         this(plugin, config, new MineskinEndpointManager(config));
@@ -34,6 +40,15 @@ public class SkinProviderManager {
         this.plugin = plugin;
         this.config = config;
         this.mineskinResigner = new MineskinResigner(plugin.getLogger(), config, endpointManager);
+        this.resolveExecutor = Executors.newFixedThreadPool(4, r -> {
+            Thread t = new Thread(r, "PSkin2-Resolve");
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    public void shutdown() {
+        this.resolveExecutor.shutdownNow();
     }
 
     public void init() {
@@ -133,7 +148,7 @@ public class SkinProviderManager {
                 return SkinFetchResult.notFound();
             }
             return lastError;
-        });
+        }, this.resolveExecutor);
     }
 
     public String getProviderNames() {

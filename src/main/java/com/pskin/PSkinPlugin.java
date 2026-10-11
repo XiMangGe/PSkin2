@@ -196,6 +196,9 @@ extends JavaPlugin {
         if (this.webServer != null) {
             this.webServer.stop();
         }
+        if (this.providerManager != null) {
+            this.providerManager.shutdown();
+        }
         if (this.webSkinManager != null) {
             this.webSkinManager.save();
         }

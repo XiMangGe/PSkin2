@@ -72,8 +72,9 @@ public class SkinCache {
                     boolean expired;
                     CachedEntry entry = (CachedEntry)e.getValue();
                     if (entry == null || entry.value == null) continue;
-                    boolean bl = expired = !entry.manual && now - entry.timestamp >= ttl;
-                    if (expired && ttl > 0L) continue;
+                    // ttl <= 0 表示禁用缓存：非手动条目一律不可用
+                    boolean bl = expired = !entry.manual && (ttl <= 0L || now - entry.timestamp >= ttl);
+                    if (expired) continue;
                     this.cache.put(((String)e.getKey()).toLowerCase(), new SkinData(entry.value, entry.signature, entry.source, entry.originalSource, entry.timestamp));
                     if (!entry.manual) continue;
                     this.manualSet.put(((String)e.getKey()).toLowerCase(), entry.timestamp);
@@ -126,7 +127,7 @@ public class SkinCache {
                     String key;
                     boolean expired;
                     CachedEntry entry = (CachedEntry)e.getValue();
-                    if (entry == null || entry.value == null || e.getKey() == null || (expired = !entry.manual && ttl > 0L && now - entry.timestamp >= ttl) || this.cache.containsKey(key = ((String)e.getKey()).toLowerCase())) continue;
+                    if (entry == null || entry.value == null || e.getKey() == null || (expired = !entry.manual && (ttl <= 0L || now - entry.timestamp >= ttl)) || this.cache.containsKey(key = ((String)e.getKey()).toLowerCase())) continue;
                     this.cache.put(key, new SkinData(entry.value, entry.signature, entry.source, entry.originalSource, entry.timestamp));
                     if (entry.manual) {
                         this.manualSet.put(key, entry.timestamp);
@@ -166,7 +167,7 @@ public class SkinCache {
                     boolean expired;
                     CachedEntry entry = (CachedEntry)e.getValue();
                     if (entry == null || entry.value == null || e.getKey() == null) continue;
-                    boolean bl = expired = !entry.manual && ttl > 0L && now - entry.timestamp >= ttl;
+                    boolean bl = expired = !entry.manual && (ttl <= 0L || now - entry.timestamp >= ttl);
                     if (expired) continue;
                     this.db.importCacheEntry(((String)e.getKey()).toLowerCase(), entry);
                     ++imported;
@@ -195,7 +196,7 @@ public class SkinCache {
             for (Map.Entry<String, SkinData> e : this.cache.entrySet()) {
                 boolean expired;
                 boolean manual = this.manualSet.containsKey(e.getKey());
-                boolean bl = expired = !manual && ttl > 0L && now - e.getValue().getTimestamp() >= ttl;
+                boolean bl = expired = !manual && (ttl <= 0L || now - e.getValue().getTimestamp() >= ttl);
                 if (expired) continue;
                 CachedEntry entry = new CachedEntry();
                 entry.value = e.getValue().getValue();
@@ -220,7 +221,8 @@ public class SkinCache {
     }
 
     private long getTtlMillis() {
-        return (long)this.config.getSkinCacheMinutes() * 60000L;
+        // 负数配置视为 0（禁用缓存），避免负 TTL 造成语义混乱
+        return Math.max(0L, (long)this.config.getSkinCacheMinutes()) * 60000L;
     }
 
     private SkinData fromEntry(CachedEntry entry) {
@@ -238,7 +240,7 @@ public class SkinCache {
                 return null;
             }
             long ttl = this.getTtlMillis();
-            if (!entry.manual && ttl > 0L && System.currentTimeMillis() - entry.timestamp >= ttl) {
+            if (!entry.manual && (ttl <= 0L || System.currentTimeMillis() - entry.timestamp >= ttl)) {
                 this.db.deleteCacheEntry(key);
                 return null;
             }
@@ -253,7 +255,7 @@ public class SkinCache {
             return data;
         }
         long ttl = this.getTtlMillis();
-        if (ttl > 0L && System.currentTimeMillis() - data.getTimestamp() >= ttl) {
+        if (ttl <= 0L || System.currentTimeMillis() - data.getTimestamp() >= ttl) {
             this.cache.remove(key);
             return null;
         }
@@ -334,7 +336,7 @@ public class SkinCache {
             for (Map.Entry<String, CachedEntry> e : this.db.loadAllCacheEntries().entrySet()) {
                 boolean expired;
                 if (e.getValue() == null || e.getValue().value == null) continue;
-                boolean bl = expired = !e.getValue().manual && ttl > 0L && now - e.getValue().timestamp >= ttl;
+                boolean bl = expired = !e.getValue().manual && (ttl <= 0L || now - e.getValue().timestamp >= ttl);
                 if (expired) continue;
                 result.put(e.getKey(), this.fromEntry(e.getValue()));
             }
@@ -343,7 +345,7 @@ public class SkinCache {
         this.syncFromDisk();
         for (Map.Entry<String, SkinData> e : this.cache.entrySet()) {
             boolean manual = this.manualSet.containsKey(e.getKey());
-            if (!manual && ttl > 0L && now - e.getValue().getTimestamp() >= ttl) continue;
+            if (!manual && (ttl <= 0L || now - e.getValue().getTimestamp() >= ttl)) continue;
             result.put(e.getKey(), e.getValue());
         }
         return result;
