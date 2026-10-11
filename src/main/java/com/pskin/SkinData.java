@@ -15,11 +15,16 @@ public class SkinData {
     }
 
     public SkinData(String value, String signature, String source, String originalSource) {
+        this(value, signature, source, originalSource, System.currentTimeMillis());
+    }
+
+    public SkinData(String value, String signature, String source, String originalSource, long timestamp) {
         this.value = value;
         this.signature = signature;
         this.source = source;
         this.originalSource = originalSource;
-        this.timestamp = System.currentTimeMillis();
+        // 时间戳 <= 0 视为无效，回退为当前时间
+        this.timestamp = timestamp > 0L ? timestamp : System.currentTimeMillis();
     }
 
     public String getValue() {

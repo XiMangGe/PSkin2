@@ -214,14 +214,14 @@ public class WebSkinManager {
             if (entry == null || entry.value == null) {
                 return null;
             }
-            return new SkinData(entry.value, entry.signature, "web");
+            return new SkinData(entry.value, entry.signature, "web", null, entry.timestamp);
         }
         this.syncFromDisk();
         WebEntry entry = this.skins.get(key);
         if (entry == null || entry.value == null) {
             return null;
         }
-        return new SkinData(entry.value, entry.signature, "web");
+        return new SkinData(entry.value, entry.signature, "web", null, entry.timestamp);
     }
 
     public boolean has(String username) {
@@ -325,7 +325,7 @@ public class WebSkinManager {
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(e -> sorted.put(e.getKey(), e.getValue()));
         }
-        sorted.forEach((name, entry) -> list.add(new WebSkinInfo(name, new SkinData(entry.value, entry.signature, "web"), entry.model, entry.timestamp)));
+        sorted.forEach((name, entry) -> list.add(new WebSkinInfo(name, new SkinData(entry.value, entry.signature, "web", null, entry.timestamp), entry.model, entry.timestamp)));
         return list;
     }
 

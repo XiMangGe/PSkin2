@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -327,20 +328,39 @@ public class PSkinConfig {
      *       api-root: "https://mcskin.example.com/api/yggdrasil"
      *       timeout-seconds: 10
      */
+    /**
+     * 大小写无关地解析 providers 下的真实配置键。
+     * 玩家输入/来源锁存的名称可能是小写，而配置键可能含大写（或反之）。
+     */
+    private String resolveProviderKey(String name) {
+        ConfigurationSection providers = this.plugin.getConfig().getConfigurationSection("providers");
+        if (providers != null) {
+            for (String key : providers.getKeys(false)) {
+                if (key.equalsIgnoreCase(name)) {
+                    return key;
+                }
+            }
+        }
+        return name;
+    }
+
     public boolean isCustomYggdrasil(String name) {
         if (name == null) return false;
         String lower = name.toLowerCase();
         if ("mojang".equals(lower) || "littleskin".equals(lower)) return false;
-        String type = this.plugin.getConfig().getString("providers." + name + ".type", "");
+        String key = this.resolveProviderKey(name);
+        String type = this.plugin.getConfig().getString("providers." + key + ".type", "");
         return "yggdrasil".equalsIgnoreCase(type);
     }
 
     public boolean isCustomYggdrasilEnabled(String name) {
-        return this.plugin.getConfig().getBoolean("providers." + name + ".enabled", true);
+        String key = this.resolveProviderKey(name);
+        return this.plugin.getConfig().getBoolean("providers." + key + ".enabled", true);
     }
 
     public String getCustomYggdrasilApiRoot(String name) {
-        String root = this.plugin.getConfig().getString("providers." + name + ".api-root", "");
+        String key = this.resolveProviderKey(name);
+        String root = this.plugin.getConfig().getString("providers." + key + ".api-root", "");
         if (root != null && root.endsWith("/")) {
             root = root.substring(0, root.length() - 1);
         }
@@ -348,7 +368,8 @@ public class PSkinConfig {
     }
 
     public int getCustomYggdrasilTimeout(String name) {
-        return Math.max(3, this.plugin.getConfig().getInt("providers." + name + ".timeout-seconds", 10));
+        String key = this.resolveProviderKey(name);
+        return Math.max(3, this.plugin.getConfig().getInt("providers." + key + ".timeout-seconds", 10));
     }
 
     public boolean isAutoApplyOnJoin() {

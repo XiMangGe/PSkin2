@@ -74,7 +74,7 @@ public class SkinCache {
                     if (entry == null || entry.value == null) continue;
                     boolean bl = expired = !entry.manual && now - entry.timestamp >= ttl;
                     if (expired && ttl > 0L) continue;
-                    this.cache.put(((String)e.getKey()).toLowerCase(), new SkinData(entry.value, entry.signature, entry.source, entry.originalSource));
+                    this.cache.put(((String)e.getKey()).toLowerCase(), new SkinData(entry.value, entry.signature, entry.source, entry.originalSource, entry.timestamp));
                     if (!entry.manual) continue;
                     this.manualSet.put(((String)e.getKey()).toLowerCase(), entry.timestamp);
                 }
@@ -127,7 +127,7 @@ public class SkinCache {
                     boolean expired;
                     CachedEntry entry = (CachedEntry)e.getValue();
                     if (entry == null || entry.value == null || e.getKey() == null || (expired = !entry.manual && ttl > 0L && now - entry.timestamp >= ttl) || this.cache.containsKey(key = ((String)e.getKey()).toLowerCase())) continue;
-                    this.cache.put(key, new SkinData(entry.value, entry.signature, entry.source, entry.originalSource));
+                    this.cache.put(key, new SkinData(entry.value, entry.signature, entry.source, entry.originalSource, entry.timestamp));
                     if (entry.manual) {
                         this.manualSet.put(key, entry.timestamp);
                     }
@@ -227,7 +227,7 @@ public class SkinCache {
         if (entry == null || entry.value == null) {
             return null;
         }
-        return new SkinData(entry.value, entry.signature, entry.source, entry.originalSource);
+        return new SkinData(entry.value, entry.signature, entry.source, entry.originalSource, entry.timestamp);
     }
 
     public SkinData get(String username) {
