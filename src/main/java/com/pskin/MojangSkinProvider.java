@@ -13,6 +13,8 @@ import com.pskin.libs.gson.JsonObject;
 import com.pskin.libs.gson.JsonParser;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -42,7 +44,9 @@ implements SkinProvider {
                 HttpResponse<String> sessionResp;
                 JsonObject profileJson;
                 HttpResponse<String> profileResp;
-                String profileUrl = String.format(this.config.getMojangProfileUrl(), username);
+                // 用户名需 URL 编码，否则 /pskin set 传入的斜杠、问号等会破坏请求 URL
+                String encodedName = URLEncoder.encode(username, StandardCharsets.UTF_8);
+                String profileUrl = String.format(this.config.getMojangProfileUrl(), encodedName);
                 HttpRequest profileReq = HttpRequest.newBuilder().uri(URI.create(profileUrl)).timeout(Duration.ofSeconds(this.config.getMojangTimeout())).header("User-Agent", this.config.getUserAgent()).GET().build();
                 try {
                     profileResp = this.httpClient.send(profileReq, HttpResponse.BodyHandlers.ofString());

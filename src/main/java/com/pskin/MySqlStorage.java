@@ -64,7 +64,8 @@ public class MySqlStorage {
         return this.conn;
     }
 
-    private <T> T run(String what, SqlOp<T> op) {
+    // 整个读/写过程必须串行：内部复用同一个 Connection，JDBC 不允许并发使用
+    private synchronized <T> T run(String what, SqlOp<T> op) {
         try {
             return op.run(this.connection());
         } catch (SQLException first) {

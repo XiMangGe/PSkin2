@@ -258,7 +258,7 @@ public class PSkinConfig {
         String tblPrefix = cfg.getString("storage.mysql.table-prefix", "pskin_");
         this.mySqlTablePrefix = tblPrefix == null || tblPrefix.trim().isEmpty() ? "pskin_" : tblPrefix.trim();
         this.mySqlUseSsl = cfg.getBoolean("storage.mysql.use-ssl", false);
-        this.userAgent = cfg.getString("user-agent", "PSkin2/26.10.11.1");
+        this.userAgent = cfg.getString("user-agent", "PSkin2/26.10.11.3");
         this.refreshVisibility = cfg.getBoolean("refresh-visibility", false);
         this.debug = cfg.getBoolean("debug", false);
     }

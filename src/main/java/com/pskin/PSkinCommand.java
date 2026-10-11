@@ -387,6 +387,8 @@ TabCompleter {
         }
         this.skinCache.remove(target);
         this.webSkinManager.remove(target);
+        // 同时解除来源锁定，否则锁定玩家的皮肤会被立刻按锁定来源解析回来，"清除"形同无效
+        this.sourceLockManager.reset(target);
         this.messages.send(sender, "skin-cleared", target);
         Player targetPlayer = Bukkit.getPlayerExact((String)target);
         if (targetPlayer != null && targetPlayer.isOnline()) {
@@ -405,6 +407,20 @@ TabCompleter {
         }
         String name = player.getName();
         this.messages.send((CommandSender)player, "updating", new Object[0]);
+        String lock = this.sourceLockManager.get(name);
+        // 来源锁定为 web / offline 时没有远程皮肤可查，按锁定语义处理，
+        // 否则 resolveSkin 找不到同名 provider 会误报"未找到皮肤"
+        if ("web".equalsIgnoreCase(lock) || "offline".equalsIgnoreCase(lock)) {
+            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock) ? this.webSkinManager.get(name) : null;
+            if (lockedWebSkin != null) {
+                this.skinApplier.applySkin(player, lockedWebSkin);
+                this.messages.send((CommandSender)player, "web-skin-applied", new Object[0]);
+            } else {
+                this.skinApplier.clearSkin(player);
+                this.messages.send((CommandSender)player, "skin-cleared", name);
+            }
+            return;
+        }
         SkinData webSkin = this.webSkinManager.get(name);
         if (webSkin != null) {
             this.skinApplier.applySkin(player, webSkin);
@@ -412,7 +428,6 @@ TabCompleter {
             return;
         }
         this.skinCache.invalidate(name);
-        String lock = this.sourceLockManager.get(name);
         String lookupName = this.config.isBedrockPlayer(name) ? this.config.stripBedrockPrefix(name) : name;
         this.providerManager.resolveSkin(lookupName, lock).thenAccept(result -> Bukkit.getScheduler().runTask((Plugin)this.plugin, () -> {
             if (!player.isOnline()) {
@@ -486,6 +501,19 @@ TabCompleter {
         this.messages.send(sender, "applying", targetName);
         String lookupName = this.config.isBedrockPlayer(targetName) ? this.config.stripBedrockPrefix(targetName) : targetName;
         String lock = this.sourceLockManager.get(targetName);
+        // 锁定 web / offline 时无远程源可查，按锁定语义直接处理
+        if ("web".equalsIgnoreCase(lock) || "offline".equalsIgnoreCase(lock)) {
+            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock) ? this.webSkinManager.get(targetName) : null;
+            if (lockedWebSkin != null) {
+                this.skinCache.put(targetName, lockedWebSkin, false);
+                this.skinApplier.applySkin(target, lockedWebSkin);
+                this.messages.send(sender, "apply-success", targetName, lockedWebSkin.getDisplaySource());
+            } else {
+                this.skinApplier.clearSkin(target);
+                this.messages.send(sender, "skin-cleared", targetName);
+            }
+            return;
+        }
         this.providerManager.resolveSkin(lookupName, lock).thenAccept(result -> Bukkit.getScheduler().runTask((Plugin)this.plugin, () -> {
             if (result.isSuccess()) {
                 this.skinCache.put(targetName, result.getSkinData(), false);

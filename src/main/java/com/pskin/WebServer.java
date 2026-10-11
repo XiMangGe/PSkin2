@@ -436,7 +436,15 @@ public class WebServer {
             return;
         }
         long cooldownMs = (long)this.config.getWebUploadCooldownSeconds() * 1000L;
-        if (cooldownMs > 0L && (last = this.uploadCooldowns.get(name.toLowerCase())) != null && System.currentTimeMillis() - last < cooldownMs) {
+        if (cooldownMs > 0L) {
+            // 顺带清理过期记录，避免 map 随玩家人数无限增长
+            long nowMs = System.currentTimeMillis();
+            this.uploadCooldowns.entrySet().removeIf(e -> nowMs - e.getValue() >= cooldownMs);
+            last = this.uploadCooldowns.get(name.toLowerCase());
+        } else {
+            last = null;
+        }
+        if (cooldownMs > 0L && last != null && System.currentTimeMillis() - last < cooldownMs) {
             this.sendError(ex, 429, this.lang.get("err-rate"));
             return;
         }

@@ -64,7 +64,10 @@ implements SkinProvider {
                     return SkinFetchResult.apiError();
                 }
                 String profilesUrl = apiRoot + "/api/profiles/minecraft";
-                String body = "[\"" + username.replace("\"", "\\\"") + "\"]";
+                // 用 Gson 构造 JSON，避免用户名中的引号/反斜杠破坏请求体
+                JsonArray nameArray = new JsonArray();
+                nameArray.add(username);
+                String body = nameArray.toString();
                 HttpRequest profilesReq = HttpRequest.newBuilder().uri(URI.create(profilesUrl)).timeout(Duration.ofSeconds(this.config.getLittleSkinTimeout())).header("Content-Type", "application/json").header("User-Agent", this.config.getUserAgent()).POST(HttpRequest.BodyPublishers.ofString(body)).build();
                 try {
                     profilesResp = this.httpClient.send(profilesReq, HttpResponse.BodyHandlers.ofString());

@@ -48,7 +48,7 @@ public class SkinApplier {
                 boolean strip = this.config.isStripSignature() && skinData.hasSignature();
                 this.setTextures(player, skinData.getValue(),
                         (skinData.hasSignature() && !strip) ? skinData.getSignature() : null);
-                if (!this.tryRefreshPlayer(player)) {
+                if (!this.tryRefreshPlayer(player) && this.config.isRefreshVisibility()) {
                     this.refreshForOthers(player);
                 }
                 if (this.config.isDebug()) {
@@ -72,7 +72,7 @@ public class SkinApplier {
                     return;
                 }
                 this.setTextures(player, null, null);
-                if (!this.tryRefreshPlayer(player)) {
+                if (!this.tryRefreshPlayer(player) && this.config.isRefreshVisibility()) {
                     this.refreshForOthers(player);
                 }
             } catch (Exception e) {
