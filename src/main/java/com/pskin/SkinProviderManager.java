@@ -78,7 +78,7 @@ public class SkinProviderManager {
                     this.plugin.getLogger().warning("皮肤源 " + name + " 未配置 api-root，已跳过");
                     continue block8;
                 }
-                this.providers.add(new LittleSkinProvider(this.config, apiRoot, name));
+                this.providers.add(new LittleSkinProvider(this.config, apiRoot, name, this.config.getCustomYggdrasilTimeout(name)));
                 this.plugin.getLogger().info("已注册自定义皮肤源: " + name + " (" + apiRoot + ")");
                 continue block8;
             }
