@@ -186,8 +186,10 @@ public class SkinResolveService {
         if (!bedrock || this.config.isBedrockRemoteSkins()) {
             // refresh-on-join：进服触发时跳过缓存，强制重新查询皮肤站，
             // 玩家在皮肤站换皮肤后重新进服即可自动生效（手动设置/网站上传不受影响，
-            // 它们在上面的分支已提前返回）
-            boolean skipCache = joinBanner && this.config.isRefreshOnJoin();
+            // 它们在上面的分支已提前返回）。
+            // isRetry 也跳过：进服首解析失败后的自动重试属于同一次进服流程，
+            // 不能回退到旧缓存，否则玩家重试后拿到的还是旧皮肤。
+            boolean skipCache = (joinBanner || isRetry) && this.config.isRefreshOnJoin();
             if (skipCache && this.config.isDebug()) {
                 this.plugin.getLogger().info(name + " 已开启进服强制刷新，跳过缓存直接查询皮肤站");
             }
