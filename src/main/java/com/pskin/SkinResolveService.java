@@ -130,7 +130,10 @@ public class SkinResolveService {
                 return;
             }
             if ("web".equals(lock)) {
-                SkinData webSkin2 = this.webSkinManager.get(name);
+                // 基岩玩家允许前缀变体匹配：网站上传名可能带前缀也可能不带
+                SkinData webSkin2 = bedrock
+                        ? this.webSkinManager.getSmart(name, this.config.getBedrockPrefix())
+                        : this.webSkinManager.get(name);
                 if (webSkin2 != null) {
                     if (this.config.isDebug()) {
                         this.plugin.getLogger().info(name + " \u6765\u6e90\u9501\u5b9a\u4e3a web\uff0c\u4f7f\u7528\u7f51\u7ad9\u4e0a\u4f20\u76ae\u80a4");
@@ -160,7 +163,11 @@ public class SkinResolveService {
             this.resolveRemote(player, remoteName, lock, name, type, joinBanner, isRetry);
             return;
         }
-        if ((!bedrock || this.config.isBedrockApplyCustomSkins()) && (webSkin = this.webSkinManager.get(name)) != null) {
+        // 基岩玩家允许前缀变体匹配：网站上传名可能带前缀也可能不带
+        webSkin = bedrock
+                ? this.webSkinManager.getSmart(name, this.config.getBedrockPrefix())
+                : this.webSkinManager.get(name);
+        if ((!bedrock || this.config.isBedrockApplyCustomSkins()) && webSkin != null) {
             if (this.config.isDebug()) {
                 this.plugin.getLogger().info(name + " \u4f7f\u7528\u7f51\u7ad9\u4e0a\u4f20\u76ae\u80a4\uff08\u72ec\u5360\uff0c\u4e0d\u67e5\u8be2\u8fdc\u7a0b\u76ae\u80a4\u6e90\uff09");
             }

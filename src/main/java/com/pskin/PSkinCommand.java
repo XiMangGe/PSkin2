@@ -411,7 +411,10 @@ TabCompleter {
         // 来源锁定为 web / offline 时没有远程皮肤可查，按锁定语义处理，
         // 否则 resolveSkin 找不到同名 provider 会误报"未找到皮肤"
         if ("web".equalsIgnoreCase(lock) || "offline".equalsIgnoreCase(lock)) {
-            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock) ? this.webSkinManager.get(name) : null;
+            boolean selfBedrock = this.config.isBedrockPlayer(name);
+            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock)
+                    ? (selfBedrock ? this.webSkinManager.getSmart(name, this.config.getBedrockPrefix()) : this.webSkinManager.get(name))
+                    : null;
             if (lockedWebSkin != null) {
                 this.skinApplier.applySkin(player, lockedWebSkin);
                 this.messages.send((CommandSender)player, "web-skin-applied", new Object[0]);
@@ -423,7 +426,10 @@ TabCompleter {
         }
         // 网站上传皮肤仅在未锁定来源时独占使用（与进服解析规则一致）
         if (lock == null) {
-            SkinData webSkin = this.webSkinManager.get(name);
+            boolean selfBedrock = this.config.isBedrockPlayer(name);
+            SkinData webSkin = selfBedrock
+                    ? this.webSkinManager.getSmart(name, this.config.getBedrockPrefix())
+                    : this.webSkinManager.get(name);
             if (webSkin != null) {
                 this.skinApplier.applySkin(player, webSkin);
                 this.messages.send((CommandSender)player, "web-skin-applied", new Object[0]);
@@ -506,7 +512,10 @@ TabCompleter {
         String lock = this.sourceLockManager.get(targetName);
         // 锁定 web / offline 时无远程源可查，按锁定语义直接处理
         if ("web".equalsIgnoreCase(lock) || "offline".equalsIgnoreCase(lock)) {
-            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock) ? this.webSkinManager.get(targetName) : null;
+            boolean targetBedrock = this.config.isBedrockPlayer(target.getName());
+            SkinData lockedWebSkin = "web".equalsIgnoreCase(lock)
+                    ? (targetBedrock ? this.webSkinManager.getSmart(targetName, this.config.getBedrockPrefix()) : this.webSkinManager.get(targetName))
+                    : null;
             if (lockedWebSkin != null) {
                 this.skinCache.put(targetName, lockedWebSkin, false);
                 this.skinApplier.applySkin(target, lockedWebSkin);
@@ -519,7 +528,10 @@ TabCompleter {
         }
         // 未锁定来源时网站上传皮肤独占（与进服解析规则一致）
         if (lock == null) {
-            SkinData webSkin = this.webSkinManager.get(targetName);
+            boolean targetBedrock = this.config.isBedrockPlayer(target.getName());
+            SkinData webSkin = targetBedrock
+                    ? this.webSkinManager.getSmart(targetName, this.config.getBedrockPrefix())
+                    : this.webSkinManager.get(targetName);
             if (webSkin != null) {
                 this.skinApplier.applySkin(target, webSkin);
                 this.messages.send(sender, "apply-success", targetName, webSkin.getDisplaySource());

@@ -224,6 +224,24 @@ public class WebSkinManager {
         return new SkinData(entry.value, entry.signature, "web", null, entry.timestamp);
     }
 
+    /**
+     * 基岩玩家专用的变体匹配：网站上传时名字可能带了基岩前缀（.Steve）也可能没带（Steve），
+     * 而进服名是带前缀的完整名。先精确匹配，失败后按前缀变体重试。
+     * 只对"确认是基岩玩家"的目标调用，避免 Java 玩家误匹配到别人的皮肤。
+     */
+    public SkinData getSmart(String username, String bedrockPrefix) {
+        SkinData data = this.get(username);
+        if (data != null) {
+            return data;
+        }
+        String key = username.toLowerCase();
+        String prefix = bedrockPrefix == null || bedrockPrefix.isEmpty() ? "." : bedrockPrefix.toLowerCase();
+        if (key.startsWith(prefix) && key.length() > prefix.length()) {
+            return this.get(key.substring(prefix.length()));
+        }
+        return this.get(prefix + key);
+    }
+
     public boolean has(String username) {
         if (this.db != null) {
             WebSkinManager.WebEntry entry = this.db.loadWebSkin(username.toLowerCase());
