@@ -44,6 +44,7 @@ public class PSkinConfig {
     private String bedrockPrefix;
     private boolean bedrockApplyCustomSkins;
     private boolean bedrockRemoteSkins;
+    private int bedrockReapplyDelayTicks;
     private boolean webJoinFeedback;
     private boolean autoApplyFeedback;
     private boolean authmeIntegration;
@@ -174,6 +175,7 @@ public class PSkinConfig {
         this.bedrockPrefix = cfg.getString("bedrock.prefix", ".");
         this.bedrockApplyCustomSkins = cfg.getBoolean("bedrock.apply-custom-skins", true);
         this.bedrockRemoteSkins = cfg.getBoolean("bedrock.remote-skins", true);
+        this.bedrockReapplyDelayTicks = Math.max(0, cfg.getInt("bedrock.reapply-delay-ticks", 100));
         this.webJoinFeedback = cfg.getBoolean("web.join-feedback", true);
         this.autoApplyFeedback = cfg.getBoolean("auto-apply-feedback", true);
         this.authmeIntegration = cfg.getBoolean("authme.enabled", false);
@@ -432,6 +434,10 @@ public class PSkinConfig {
 
     public boolean isBedrockRemoteSkins() {
         return this.bedrockRemoteSkins;
+    }
+
+    public int getBedrockReapplyDelayTicks() {
+        return this.bedrockReapplyDelayTicks;
     }
 
     public boolean isWebJoinFeedback() {

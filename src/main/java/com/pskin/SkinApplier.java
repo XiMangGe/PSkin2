@@ -41,29 +41,48 @@ public class SkinApplier {
             return;
         }
         Bukkit.getScheduler().runTask((Plugin) this.plugin, () -> {
-            try {
-                if (!player.isOnline()) {
-                    return;
-                }
-                boolean strip = this.config.isStripSignature() && skinData.hasSignature();
-                this.setTextures(player, skinData.getValue(),
-                        (skinData.hasSignature() && !strip) ? skinData.getSignature() : null);
-                if (!this.tryRefreshPlayer(player)) {
-                    // refreshPlayer 不可用时的必要兜底：不 hide/show 的话其他客户端不会重新渲染皮肤
-                    this.refreshForOthers(player);
-                } else if (this.config.isRefreshVisibility()) {
-                    // 强力模式：常规刷新之外再对全体玩家强制刷新一轮可见性
-                    this.refreshForOthers(player);
-                }
-                if (this.config.isDebug()) {
-                    this.plugin.getLogger().info("已应用 " + player.getName() + " 的皮肤，来源: " + skinData.getDisplaySource()
-                            + "，签名: " + (skinData.hasSignature() ? "有" : "无")
-                            + "，发送签名: " + (skinData.hasSignature() && !strip ? "是" : "否（已剥离）"));
-                }
-            } catch (Exception e) {
-                this.plugin.getLogger().log(Level.WARNING, "给 " + player.getName() + " 应用皮肤失败", e);
+            this.applySkinNow(player, skinData);
+            // 基岩玩家（Geyser/Floodgate）：Geyser 在连接完成后会异步把基岩原始皮肤
+            // 写回 GameProfile，晚于本插件的应用时机，导致网站/手动皮肤几秒后被
+            // 覆盖回基岩默认皮肤（Java 玩家视角"皮肤失效"）。
+            // 延迟重应用一次，确保晚于 Geyser 的皮肤同步；0 = 关闭该防护。
+            long delay = this.config.getBedrockReapplyDelayTicks();
+            if (delay > 0L && this.config.isBedrockPlayer(player.getName())) {
+                Bukkit.getScheduler().runTaskLater((Plugin) this.plugin, () -> {
+                    if (player.isOnline()) {
+                        this.applySkinNow(player, skinData);
+                        if (this.config.isDebug()) {
+                            this.plugin.getLogger().info("基岩玩家延迟重应用皮肤（防 Geyser 覆盖）: " + player.getName());
+                        }
+                    }
+                }, delay);
             }
         });
+    }
+
+    private void applySkinNow(Player player, SkinData skinData) {
+        try {
+            if (!player.isOnline()) {
+                return;
+            }
+            boolean strip = this.config.isStripSignature() && skinData.hasSignature();
+            this.setTextures(player, skinData.getValue(),
+                    (skinData.hasSignature() && !strip) ? skinData.getSignature() : null);
+            if (!this.tryRefreshPlayer(player)) {
+                // refreshPlayer 不可用时的必要兜底：不 hide/show 的话其他客户端不会重新渲染皮肤
+                this.refreshForOthers(player);
+            } else if (this.config.isRefreshVisibility()) {
+                // 强力模式：常规刷新之外再对全体玩家强制刷新一轮可见性
+                this.refreshForOthers(player);
+            }
+            if (this.config.isDebug()) {
+                this.plugin.getLogger().info("已应用 " + player.getName() + " 的皮肤，来源: " + skinData.getDisplaySource()
+                        + "，签名: " + (skinData.hasSignature() ? "有" : "无")
+                        + "，发送签名: " + (skinData.hasSignature() && !strip ? "是" : "否（已剥离）"));
+            }
+        } catch (Exception e) {
+            this.plugin.getLogger().log(Level.WARNING, "给 " + player.getName() + " 应用皮肤失败", e);
+        }
     }
 
     public void clearSkin(Player player) {
