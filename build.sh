@@ -5,7 +5,7 @@
 
 set -e
 
-VERSION="26.10.11.7"
+VERSION="26.11.15.1"
 SRC="src/main/java"
 OUT="classes"
 JAR="PSkin2-${VERSION}.jar"

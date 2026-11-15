@@ -22,7 +22,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class PSkinConfig {
     private static final Pattern COLOR_PATTERN = Pattern.compile("^#[0-9a-fA-F]{6}$");
-    private static final String[] REQUIRED_KEYS = new String[]{"language", "auto-apply-on-join", "auto-apply-feedback", "join-notify", "authme", "skin-priority", "providers", "mineskin", "web", "commands.cooldown-seconds", "user-agent", "storage", "storage.type", "storage.directory", "storage.mysql.enabled", "web.show-link", "web.auto-port"};
+    private static final String[] REQUIRED_KEYS = new String[]{"language", "auto-apply-on-join", "auto-apply-feedback", "join-notify", "authme", "skin-priority", "providers", "mineskin", "web", "commands.cooldown-seconds", "user-agent", "storage", "storage.type", "storage.directory", "storage.mysql.enabled", "web.show-link", "web.auto-port", "refresh-on-join"};
     private final JavaPlugin plugin;
     private String configLoadError;
     private int mergedKeys;
@@ -80,6 +80,7 @@ public class PSkinConfig {
     private String webFilesFolder;
     private int commandCooldown;
     private int skinCacheMinutes;
+    private boolean refreshOnJoin;
     private String storageType;
     private String storageDirectory;
     private boolean mySqlEnabled;
@@ -244,6 +245,7 @@ public class PSkinConfig {
         }
         this.commandCooldown = cfg.getInt("commands.cooldown-seconds", 30);
         this.skinCacheMinutes = cfg.getInt("skin-cache-minutes", 720);
+        this.refreshOnJoin = cfg.getBoolean("refresh-on-join", false);
         String storageType = cfg.getString("storage.type", "file");
         this.storageType = storageType == null || storageType.trim().isEmpty() ? "file" : storageType.trim().toLowerCase();
         String storageDir = cfg.getString("storage.directory", "");
@@ -599,6 +601,10 @@ public class PSkinConfig {
 
     public int getSkinCacheMinutes() {
         return this.skinCacheMinutes;
+    }
+
+    public boolean isRefreshOnJoin() {
+        return this.refreshOnJoin;
     }
 
     public String getStorageType() {

@@ -184,16 +184,25 @@ public class SkinResolveService {
             return;
         }
         if (!bedrock || this.config.isBedrockRemoteSkins()) {
-            SkinData cached = this.skinCache.get(name);
-            if (cached != null) {
-                if (this.config.isDebug()) {
-                    this.plugin.getLogger().info(name + " \u4f7f\u7528\u7f13\u5b58\u76ae\u80a4\uff08\u6765\u6e90: " + cached.getDisplaySource() + "\uff09");
+            // refresh-on-join：进服触发时跳过缓存，强制重新查询皮肤站，
+            // 玩家在皮肤站换皮肤后重新进服即可自动生效（手动设置/网站上传不受影响，
+            // 它们在上面的分支已提前返回）
+            boolean skipCache = joinBanner && this.config.isRefreshOnJoin();
+            if (skipCache && this.config.isDebug()) {
+                this.plugin.getLogger().info(name + " 已开启进服强制刷新，跳过缓存直接查询皮肤站");
+            }
+            if (!skipCache) {
+                SkinData cached = this.skinCache.get(name);
+                if (cached != null) {
+                    if (this.config.isDebug()) {
+                        this.plugin.getLogger().info(name + " \u4f7f\u7528\u7f13\u5b58\u76ae\u80a4\uff08\u6765\u6e90: " + cached.getDisplaySource() + "\uff09");
+                    }
+                    this.skinApplier.applySkin(player, cached);
+                    if (joinBanner && this.config.isJoinNotifyEnabled() && player.isOnline()) {
+                        this.sendJoinBanner(player, this.config.getJoinNotifySuccess(), name, cached.getDisplaySource());
+                    }
+                    return;
                 }
-                this.skinApplier.applySkin(player, cached);
-                if (joinBanner && this.config.isJoinNotifyEnabled() && player.isOnline()) {
-                    this.sendJoinBanner(player, this.config.getJoinNotifySuccess(), name, cached.getDisplaySource());
-                }
-                return;
             }
             SkinFetchResult lastFailure = null;
             for (String entry : this.config.getSkinPriority()) {
